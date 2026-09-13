@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RbcTcsWorld — Pharmaceutical Production Management Calculator</title>
+<style>
+  :root{
+    --ink:#12243E; --ink-2:#1B3153; --paper:#EDEBDD; --paper-2:#F5F4EC;
+    --line:#D7D3C4; --text:#1A1D1F; --text-dim:#5B5A52;
+    --teal:#1B7A6B; --teal-dark:#125A4F; --amber:#C77D2E; --red:#A6402F;
+    --mono:"IBM Plex Mono","SFMono-Regular",Consolas,Menlo,monospace;
+    --sans:"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,"Noto Sans Bengali",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--text);font-size:14px;}
+  body[data-lang="bn"] .en{display:none;} body[data-lang="en"] .bn{display:none;}
+
+  .screen{ display:none; min-height:100vh; flex-direction:column; }
+  .screen.active{ display:flex; }
+
+  button{ font-family:var(--sans); cursor:pointer; }
+  .btn{ background:var(--paper-2); border:1px solid var(--line); color:var(--text); padding:8px 14px; font-size:13px; display:inline-flex; align-items:center; gap:7px; }
+  .btn:hover{ border-color:var(--ink); }
+  .btn svg{ width:16px;height:16px; flex:none; }
+  .btn-primary{ background:var(--teal); border:1px solid var(--teal-dark); color:#fff; font-weight:600; }
+  .btn-primary:hover{ background:var(--teal-dark); }
+  .btn-ghost{ background:transparent; border:1px solid #3B4E6B; color:#EFEDE2; }
+  .btn-ghost:hover{ border-color:var(--teal); }
+  .btn-danger{ background:var(--paper-2); border:1px solid var(--red); color:var(--red); }
+  .btn-danger:hover{ background:var(--red); color:#fff; }
+  .btn-small{ padding:4px 10px; font-size:12px; }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* ---------- watermark backdrop, reusable ---------- */
+  .wm-bg{ position:relative; overflow:hidden; }
+  .wm-bg::before{
+    content:"RbcTcsWorld  RbcTcsWorld  RbcTcsWorld  RbcTcsWorld  RbcTcsWorld";
+    position:absolute; left:-15%; top:-50%; width:180%;
+    font-family:var(--mono); font-size:15px; color:rgba(18,36,62,0.05);
+    white-space:nowrap; transform:rotate(-11deg); letter-spacing:0.15em; line-height:2.8;
+    pointer-events:none; z-index:0;
+  }
+
+  /* ---------- Login / Register ---------- */
+  .auth-wrap{ flex:1; display:flex; align-items:center; justify-content:center; background:var(--ink); position:relative; }
+  .auth-wrap::before{
+    content:"RbcTcsWorld  RbcTcsWorld  RbcTcsWorld  RbcTcsWorld  RbcTcsWorld";
+    position:absolute; left:-15%; top:-50%; width:180%;
+    font-family:var(--mono); font-size:15px; color:rgba(255,255,255,0.045);
+    white-space:nowrap; transform:rotate(-11deg); letter-spacing:0.15em; line-height:2.8;
+    pointer-events:none;
+  }
+  .auth-card{
+    position:relative; z-index:1;
+    width:min(420px, 92vw);
+    background:#fff; border:1px solid var(--line);
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .auth-header{
+    background:linear-gradient(135deg, var(--ink) 0%, var(--teal-dark) 100%);
+    color:#fff; padding:28px 28px 22px;
+    text-align:center;
+  }
+  .auth-mark{ width:52px;height:52px; margin:0 auto 10px; border:2px solid #EFEDE2; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:24px; color:#EFEDE2; }
+  .auth-brand{ font-family:var(--mono); font-size:20px; letter-spacing:0.03em; font-weight:700; }
+  .auth-tag{ font-size:12px; color:#C9D3E0; margin-top:4px; }
+  .auth-body{ padding:26px 28px 28px; }
+  .auth-field{ margin-bottom:14px; display:flex; flex-direction:column; gap:4px; }
+  .auth-field label{ font-size:12px; font-weight:600; color:var(--text-dim); }
+  .auth-field input{ font-family:var(--sans); font-size:14px; padding:9px 11px; border:1px solid var(--line); }
+  .auth-field input:focus{ outline:2px solid var(--teal); outline-offset:-1px; }
+  .auth-submit{ width:100%; justify-content:center; padding:11px; font-size:14px; margin-top:6px; }
+  .auth-switch{ text-align:center; margin-top:16px; font-size:12.5px; color:var(--text-dim); }
+  .auth-switch a{ color:var(--teal-dark); font-weight:600; cursor:pointer; text-decoration:none; }
+  .auth-note{ font-size:11px; color:var(--text-dim); background:var(--paper); border:1px solid var(--line); padding:8px 10px; margin-top:16px; line-height:1.5; }
+  .auth-lang{ position:absolute; top:16px; right:16px; z-index:2; }
+
+  /* ---------- Dashboard ---------- */
+  .dash-header{
+    background:var(--ink); color:#EFEDE2; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:3px solid var(--teal); position:relative; z-index:1;
+  }
+  .dash-brand{ display:flex; align-items:center; gap:10px; }
+  .dash-brand-mark{ width:32px;height:32px; border:1.5px solid var(--teal); color:var(--teal); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:16px; }
+  .dash-brand-name{ font-family:var(--mono); font-size:15px; font-weight:700; }
+  .dash-header-right{ display:flex; gap:10px; align-items:center; }
+
+  .dash-hero{ text-align:center; padding:46px 20px 36px; position:relative; z-index:1; }
+  .dash-title{ font-size:clamp(28px, 4.4vw, 46px); font-weight:800; color:var(--ink); line-height:1.15; margin:0 0 10px; letter-spacing:-0.01em; }
+  .dash-subtitle{ font-size:15px; color:var(--text-dim); max-width:640px; margin:0 auto; line-height:1.6; }
+
+  .dash-grid{
+    flex:1;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:18px; padding:10px 40px 50px; max-width:1180px; margin:0 auto; width:100%;
+    position:relative; z-index:1;
+  }
+  .tile{
+    background:#fff; border:1px solid var(--line); border-top:4px solid var(--teal);
+    padding:22px 20px; text-align:left; display:flex; flex-direction:column; gap:10px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .tile:hover{ transform:translateY(-3px); box-shadow:0 10px 26px rgba(18,36,62,0.14); border-top-color:var(--amber); }
+  .tile-icon{ width:38px;height:38px; color:var(--teal-dark); }
+  .tile-title{ font-size:15px; font-weight:700; color:var(--ink); }
+  .tile-desc{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
+  .tile-num{ font-family:var(--mono); font-size:11px; color:var(--amber); font-weight:700; }
+
+  /* ---------- App shell (tool screen) ---------- */
+  .titlebar{ background:var(--ink); color:#EFEDE2; display:flex; align-items:center; justify-content:space-between; padding:10px 18px; border-bottom:3px solid var(--teal); position:relative; overflow:hidden; }
+  .titlebar::before{ content:"RbcTcsWorld  RbcTcsWorld  RbcTcsWorld  RbcTcsWorld"; position:absolute; left:-10%; top:-60%; width:160%; font-family:var(--mono); font-size:13px; color:rgba(255,255,255,0.045); white-space:nowrap; transform:rotate(-11deg); letter-spacing:0.15em; line-height:2.6; pointer-events:none; }
+  .brand{ display:flex; align-items:center; gap:10px; z-index:1; }
+  .brand-mark{ width:28px;height:28px; display:flex;align-items:center;justify-content:center; border:1.5px solid var(--teal); color:var(--teal); font-family:var(--mono); font-size:14px; flex:none; }
+  .brand-name{ font-family:var(--mono); letter-spacing:0.02em; font-size:14px; font-weight:600; }
+  .titlebar-right{ display:flex; align-items:center; gap:10px; z-index:1; }
+  .origin-pill{ font-family:var(--mono); font-size:11px; color:#B9C4D6; background:#0F1E33; border:1px solid #3B4E6B; padding:4px 8px; }
+
+  .tabstrip{ display:flex; align-items:stretch; background:var(--paper-2); border-bottom:1px solid var(--line); padding:0 12px; gap:2px; flex-wrap:wrap; }
+  .tab{ background:transparent; border:none; border-bottom:3px solid transparent; padding:9px 12px; font-size:12.5px; color:var(--text-dim); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+  .tab svg{ width:15px;height:15px; }
+  .tab:hover{ color:var(--text); }
+  .tab[aria-selected="true"]{ color:var(--ink); border-bottom-color:var(--teal); background:var(--paper); }
+
+  main.tool-main{ flex:1; display:flex; justify-content:center; padding:26px 16px 40px; }
+  .panel{ display:none; width:100%; max-width:640px; }
+  .panel.active{ display:block; }
+
+  .form-card{ background:#fff; border:1px solid var(--line); box-shadow:0 2px 10px rgba(18,36,62,0.06); }
+  .form-card-head{ background:var(--ink); color:#EFEDE2; padding:12px 20px; display:flex; align-items:center; gap:10px; }
+  .form-card-head svg{ width:20px;height:20px; color:var(--teal); flex:none; }
+  .form-card-title{ font-size:14.5px; font-weight:700; }
+  .form-card-body{ padding:20px 22px; }
+
+  .inline-help{ background:#F4F8F6; border-left:3px solid var(--teal); padding:9px 12px; font-size:12px; color:var(--text-dim); line-height:1.55; margin-bottom:16px; }
+  .inline-help b{ color:var(--teal-dark); }
+
+  .field-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .field{ flex:1; min-width:130px; display:flex; flex-direction:column; gap:3px; }
+  .field label{ font-size:11.5px; color:var(--text-dim); font-weight:600; }
+  .field input, .field select{ font-family:var(--mono); font-size:13px; padding:6px 8px; border:1px solid var(--line); background:#fff; color:var(--text); }
+  .field input:focus, .field select:focus{ outline:2px solid var(--teal); outline-offset:-1px; }
+
+  table.rows{ width:100%; border-collapse:collapse; margin-bottom:8px; font-family:var(--mono); font-size:12px; }
+  table.rows th{ text-align:left; font-family:var(--sans); font-size:10.5px; color:var(--text-dim); padding:4px 3px; border-bottom:1px solid var(--line); }
+  table.rows td{ padding:3px; border-bottom:1px solid #EFEDE2; }
+  table.rows input, table.rows select{ width:100%; font-family:var(--mono); font-size:12px; padding:4px; border:1px solid var(--line); }
+  .row-remove{ background:none; border:none; color:var(--red); font-size:14px; padding:0 4px; }
+
+  .hr{ height:1px; background:var(--line); margin:16px 0; border:none; }
+
+  .action-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .action-row .btn{ flex:1 1 auto; justify-content:center; min-width:90px; }
+
+  .result-wrap{ margin-top:18px; }
+  pre.result-json{ font-family:var(--mono); font-size:11.5px; background:var(--paper); border:1px solid var(--line); padding:12px; white-space:pre-wrap; word-break:break-word; max-height:240px; overflow:auto; }
+  .result-status{ font-family:var(--mono); font-size:12.5px; margin-bottom:8px; }
+  .result-status.ok{ color:var(--teal-dark); } .result-status.err{ color:var(--red); }
+  table.out{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; margin-bottom:14px; }
+  table.out th{ text-align:left; background:var(--ink); color:#EFEDE2; padding:6px 8px; font-family:var(--sans); font-size:11px; }
+  table.out td{ padding:6px 8px; border-bottom:1px solid var(--line); background:#fff; }
+  .flag-ok{ color:var(--teal-dark); font-weight:700; } .flag-warn{ color:var(--amber); font-weight:700; } .flag-bad{ color:var(--red); font-weight:700; }
+  .result-empty{ color:var(--text-dim); font-size:12.5px; padding:16px 0; text-align:center; border:1px dashed var(--line); }
+
+  .statusbar{ background:var(--ink); color:#B9C4D6; font-family:var(--mono); font-size:11px; padding:5px 18px; display:flex; justify-content:space-between; }
+
+  /* ---------- Modals (Help Center) ---------- */
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(18,36,62,0.55); z-index:50; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open{ display:flex; }
+  .modal{ background:#fff; width:min(760px, 100%); max-height:86vh; overflow-y:auto; border:1px solid var(--line); box-shadow:0 12px 30px rgba(0,0,0,0.25); }
+  .modal-header{ background:var(--ink); color:#EFEDE2; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:2; }
+  .modal-header button{ background:none;border:none;color:#EFEDE2;font-size:18px; }
+  .modal-body{ padding:18px 22px; line-height:1.65; font-size:13.5px; }
+  .modal-body h3{ font-size:14px; color:var(--ink); margin:20px 0 6px; }
+  .modal-body h3:first-child{ margin-top:0; }
+  .modal-body table.terms{ width:100%; border-collapse:collapse; margin:8px 0 16px; font-size:12.5px; }
+  .modal-body table.terms th{ text-align:left; background:var(--paper-2); padding:5px 8px; border-bottom:1px solid var(--line); }
+  .modal-body table.terms td{ padding:5px 8px; border-bottom:1px solid #EFEDE2; vertical-align:top; }
+  .lang-tabs{ display:flex; gap:4px; padding:10px 18px 0; background:var(--paper-2); flex-wrap:wrap; }
+  .lang-tab{ background:#fff; border:1px solid var(--line); border-bottom:none; padding:6px 12px; font-size:12px; font-weight:600; color:var(--text-dim); }
+  .lang-tab[aria-selected="true"]{ color:var(--ink); background:var(--paper); border-color:var(--teal); }
+  .help-topic-nav{ display:flex; flex-wrap:wrap; gap:6px; padding:12px 18px 0; }
+  .help-topic-nav button{ font-size:11.5px; padding:4px 9px; background:var(--paper); border:1px solid var(--line); color:var(--text-dim); }
+  .help-topic-nav button[aria-selected="true"]{ background:var(--teal); color:#fff; border-color:var(--teal-dark); }
+  .oeb-badge{ display:inline-block; font-family:var(--mono); font-size:11px; font-weight:700; padding:1px 7px; border-radius:2px; color:#fff; }
+
+  @media (max-width: 700px){
+    .form-card-body{ padding:16px; }
+    .dash-grid{ padding:10px 16px 40px; }
+  }
+</style>
+</head>
+<body data-lang="bn">
+
+  <!-- ================= LOGIN ================= -->
+  <div class="screen active" id="screen-login">
+    <div class="auth-wrap">
+      <div class="auth-lang"><button class="btn btn-ghost btn-small" id="langToggle1">EN / বাং</button></div>
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-mark">⬡</div>
+          <div class="auth-brand">RbcTcsWorld</div>
+          <div class="auth-tag"><span class="bn">ব্যাচ/লট ক্যালকুলেটর — সাইন ইন</span><span class="en">Batch/Lot Calculator — Sign in</span></div>
+        </div>
+        <div class="auth-body">
+          <div class="auth-field">
+            <label><span class="bn">ইউজারনেম বা ইমেইল</span><span class="en">Username or email</span></label>
+            <input type="text" id="login-user" placeholder="rb.chowdhury" autocomplete="username">
+          </div>
+          <div class="auth-field">
+            <label><span class="bn">পাসওয়ার্ড</span><span class="en">Password</span></label>
+            <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <button class="btn btn-primary auth-submit" onclick="doLogin()">
+            <span class="bn">সাইন ইন করুন</span><span class="en">Sign in</span>
+          </button>
+          <div class="auth-switch">
+            <span class="bn">অ্যাকাউন্ট নেই? </span><span class="en">No account? </span>
+            <a onclick="showScreen('register')"><span class="bn">রেজিস্টার করুন</span><span class="en">Register</span></a>
+          </div>
+          <div class="auth-note">
+            <span class="bn">⚠ এটি একটি ডেমো লগইন — ব্রাউজারে সংরক্ষিত হয়, আসল ব্যাকএন্ড সিকিউরিটির সাথে সংযুক্ত নয়। যেকোনো ইউজারনেম/পাসওয়ার্ড দিয়ে চালিয়ে যেতে পারবেন।</span>
+            <span class="en">⚠ This is a demo login — stored in your browser only, not wired to real backend security. Any username/password will let you continue.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REGISTER ================= -->
+  <div class="screen" id="screen-register">
+    <div class="auth-wrap">
+      <div class="auth-lang"><button class="btn btn-ghost btn-small" id="langToggle2">EN / বাং</button></div>
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-mark">⬡</div>
+          <div class="auth-brand">RbcTcsWorld</div>
+          <div class="auth-tag"><span class="bn">নতুন অ্যাকাউন্ট রেজিস্ট্রেশন</span><span class="en">Create a new account</span></div>
+        </div>
+        <div class="auth-body">
+          <div class="auth-field">
+            <label><span class="bn">পুরো নাম</span><span class="en">Full name</span></label>
+            <input type="text" id="reg-name" placeholder="Ranajit Baran Chowdhury">
+          </div>
+          <div class="auth-field">
+            <label><span class="bn">ইউজারনেম</span><span class="en">Username</span></label>
+            <input type="text" id="reg-user" placeholder="rb.chowdhury">
+          </div>
+          <div class="auth-field">
+            <label><span class="bn">ইমেইল</span><span class="en">Email</span></label>
+            <input type="email" id="reg-email" placeholder="you@example.com">
+          </div>
+          <div class="auth-field">
+            <label><span class="bn">পাসওয়ার্ড</span><span class="en">Password</span></label>
+            <input type="password" id="reg-pass" placeholder="••••••••">
+          </div>
+          <div class="auth-field">
+            <label><span class="bn">পাসওয়ার্ড নিশ্চিত করুন</span><span class="en">Confirm password</span></label>
+            <input type="password" id="reg-pass2" placeholder="••••••••">
+          </div>
+          <button class="btn btn-primary auth-submit" onclick="doRegister()">
+            <span class="bn">রেজিস্টার করুন</span><span class="en">Register</span>
+          </button>
+          <div class="auth-switch">
+            <span class="bn">আগে থেকেই অ্যাকাউন্ট আছে? </span><span class="en">Already have an account? </span>
+            <a onclick="showScreen('login')"><span class="bn">সাইন ইন</span><span class="en">Sign in</span></a>
+          </div>
+          <div class="auth-note">
+            <span class="bn">⚠ এটি একটি ডেমো রেজিস্ট্রেশন — ব্রাউজারে স্থানীয়ভাবে সংরক্ষিত হয়। আসল ইউজার-ম্যানেজমেন্ট ব্যাকএন্ড (Spring Security + ডাটাবেস) পরবর্তী ধাপ হিসেবে যোগ করা যাবে।</span>
+            <span class="en">⚠ This is a demo registration — stored locally in your browser. Real user-management backend (Spring Security + database) can be added as a next step.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="screen" id="screen-dashboard">
+    <div class="dash-header">
+      <div class="dash-brand">
+        <div class="dash-brand-mark">⬡</div>
+        <div class="dash-brand-name">RbcTcsWorld</div>
+      </div>
+      <div class="dash-header-right">
+        <span class="origin-pill" id="originPillDash"></span>
+        <span style="font-size:12px;color:#B9C4D6;" id="welcomeMsg"></span>
+        <button class="btn btn-ghost btn-small" id="langToggle3">EN / বাং</button>
+        <button class="btn btn-ghost btn-small" onclick="openHelpCenter('glossary')">
+          <span class="bn">সহায়তা কেন্দ্র</span><span class="en">Help Center</span>
+        </button>
+        <button class="btn btn-ghost btn-small" onclick="doLogout()">
+          <span class="bn">লগআউট</span><span class="en">Logout</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="wm-bg" style="flex:1;display:flex;flex-direction:column;">
+      <div class="dash-hero">
+        <h1 class="dash-title">
+          <span class="bn">ফার্মাসিউটিক্যাল প্রোডাকশন ম্যানেজমেন্ট ক্যালকুলেটর</span>
+          <span class="en">Pharmaceutical Production Management Calculator</span>
+        </h1>
+        <p class="dash-subtitle">
+          <span class="bn">ব্যাচ/লট হায়ারার্কি, উপকরণ চাহিদা, প্রোগ্রেস, Sealed/Exhaust লট অ্যালোকেশন, ও রিকনসিলিয়েশন — GMP/cGMP-সম্মত ব্যাচ রেকর্ডের জন্য একটি কেন্দ্রীয় কন্ট্রোল প্যানেল।</span>
+          <span class="en">Batch/lot hierarchy, material requirement, progress, Sealed/Exhaust lot allocation, and reconciliation — a single control panel for GMP/cGMP-aligned batch records.</span>
+        </p>
+      </div>
+
+      <div class="dash-grid" id="dashGrid"></div>
+    </div>
+  </div>
+
+  <!-- ================= APP SHELL (tool screens) ================= -->
+  <div class="screen" id="screen-app">
+    <div class="titlebar">
+      <div class="brand">
+        <button class="btn btn-ghost btn-small" onclick="showScreen('dashboard')" id="backToDashBtn" style="margin-right:4px;"></button>
+        <div class="brand-mark">⬡</div>
+        <div class="brand-name">RbcTcsWorld</div>
+      </div>
+      <div class="titlebar-right">
+        <span class="origin-pill" id="originPill"></span>
+        <button class="btn btn-ghost btn-small" id="langToggle4">EN / বাং</button>
+        <button class="btn btn-ghost btn-small" id="helpCenterBtnApp"><span class="bn">সহায়তা</span><span class="en">Help</span></button>
+      </div>
+    </div>
+
+    <div class="tabstrip" id="tabstrip"></div>
+
+    <main class="tool-main">
+
+      <!-- ===== HIERARCHY ===== -->
+      <section class="panel active" id="panel-hierarchy">
+        <div class="form-card">
+          <div class="form-card-head" id="head-hierarchy"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>GMP:</b> ব্যাচ শুরু করার আগে সম্পূর্ণ হায়ারার্কি লিখিতভাবে জানা GMP-এর একটি মূল শর্ত — এটাই BPR-এর ভিত্তি।</span>
+              <span class="en"><b>GMP:</b> Knowing the full pack hierarchy before batch start is a core GMP requirement — it's the basis for the Batch Packaging Record.</span>
+            </div>
+            <div id="cfg-hierarchy"></div>
+            <div class="field-row">
+              <div class="field"><label><span class="bn">অর্ডারকৃত কার্টন</span><span class="en">Cartons ordered</span></label><input type="number" id="h-cartonsOrdered" value="62916"></div>
+            </div>
+            <div class="action-row" id="actions-hierarchy"></div>
+            <div class="result-wrap" id="result-hierarchy"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MATERIAL ===== -->
+      <section class="panel" id="panel-material">
+        <div class="form-card">
+          <div class="form-card-head" id="head-material"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>cGMP:</b> উপকরণ ইস্যু হতে হবে অনুমোদিত BOM অনুযায়ী, যুক্তিসঙ্গত overage সহ — অননুমোদিত overage একটা সাধারণ অডিট ফাইন্ডিং।</span>
+              <span class="en"><b>cGMP:</b> Material must be issued per an approved BOM with justified overage — undocumented overage is a common audit finding.</span>
+            </div>
+            <div id="cfg-material"></div>
+            <div class="field-row">
+              <div class="field"><label><span class="bn">অর্ডারকৃত কার্টন</span><span class="en">Cartons ordered</span></label><input type="number" id="m-cartonsOrdered" value="62916"></div>
+            </div>
+            <table class="rows" id="m-materials">
+              <thead><tr><th>Item#</th><th><span class="bn">বিবরণ</span><span class="en">Description</span></th><th>UoM</th><th><span class="bn">প্রতি ১০০০ কার্টনে</span><span class="en">Qty/1000 ctn</span></th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-small" onclick="addMaterialRow('m-materials')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+            <hr class="hr">
+            <div class="action-row" id="actions-material"></div>
+            <div class="result-wrap" id="result-material"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PROGRESS ===== -->
+      <section class="panel" id="panel-progress">
+        <div class="form-card">
+          <div class="form-card-head" id="head-progress"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>GMP:</b> সাথে সাথে (contemporaneous) উৎপাদন রেকর্ডিং GMP-এর মূল দাবি — এই ট্যাব সেই রিয়েল-টাইম স্ট্যাটাস দেখায়।</span>
+              <span class="en"><b>GMP:</b> Contemporaneous production recording is a core GMP requirement — this tab shows that real-time status.</span>
+            </div>
+            <div class="field-row"><div class="field"><label><span class="bn">টার্গেট কার্টন</span><span class="en">Target cartons</span></label><input type="number" id="p-target" value="62916"></div></div>
+            <table class="rows" id="p-log">
+              <thead><tr><th><span class="bn">তারিখ</span><span class="en">Date</span></th><th><span class="bn">শিফট</span><span class="en">Shift</span></th><th><span class="bn">উৎপাদিত</span><span class="en">Produced</span></th><th><span class="bn">বাতিল</span><span class="en">Rejected</span></th><th><span class="bn">মন্তব্য</span><span class="en">Remarks</span></th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-small" onclick="addLogRow('p-log')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+            <hr class="hr">
+            <div class="action-row" id="actions-progress"></div>
+            <div class="result-wrap" id="result-progress"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== LOT TYPE ===== -->
+      <section class="panel" id="panel-lottype">
+        <div class="form-card">
+          <div class="form-card-head" id="head-lottype"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>GMP:</b> Line clearance ও first-piece inspection সবচেয়ে কঠোরভাবে Startup-এ প্রযোজ্য — এই শ্রেণীবিভাগ ব্যাচ রেকর্ডে সেটা স্পষ্ট করে।</span>
+              <span class="en"><b>GMP:</b> Line clearance and first-piece inspection apply most rigorously at Startup — this classification makes that explicit in the batch record.</span>
+            </div>
+            <div class="field-row"><div class="field"><label><span class="bn">টার্গেট কার্টন</span><span class="en">Target cartons</span></label><input type="number" id="lt-target" value="62916"></div></div>
+            <table class="rows" id="lt-log">
+              <thead><tr><th><span class="bn">তারিখ</span><span class="en">Date</span></th><th><span class="bn">শিফট</span><span class="en">Shift</span></th><th><span class="bn">উৎপাদিত</span><span class="en">Produced</span></th><th><span class="bn">বাতিল</span><span class="en">Rejected</span></th><th><span class="bn">মন্তব্য</span><span class="en">Remarks</span></th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-small" onclick="addLogRow('lt-log')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+            <hr class="hr">
+            <div class="action-row" id="actions-lottype"></div>
+            <div class="result-wrap" id="result-lottype"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== LOT ALLOCATION ===== -->
+      <section class="panel" id="panel-lotalloc">
+        <div class="form-card">
+          <div class="form-card-head" id="head-lotalloc"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>GMP + EHS + OEB:</b> খোলা (Open-Partial) লট নতুন Sealed লট খোলার আগে শেষ করা GMP নিয়ম, আর কম খোলা কন্টেইনার মানে কম exposure risk — তাই উপকরণের OEB ক্লাস এখানে গুরুত্বপূর্ণ।</span>
+              <span class="en"><b>GMP + EHS + OEB:</b> Finishing Open-Partial lots before opening a new Sealed one is a GMP rule; fewer open containers also means lower exposure risk — which is why the material's OEB class matters here.</span>
+            </div>
+            <div class="field-row"><div class="field"><label><span class="bn">মোট প্রয়োজন</span><span class="en">Total requirement</span></label><input type="number" id="la-total" value="1509984"></div></div>
+            <table class="rows" id="la-lots">
+              <thead><tr><th><span class="bn">লট আইডি</span><span class="en">Lot ID</span></th><th><span class="bn">স্ট্যাটাস</span><span class="en">Status</span></th><th><span class="bn">অগ্রাধিকার</span><span class="en">Priority</span></th><th><span class="bn">ওপেনিং</span><span class="en">Opening</span></th><th><span class="bn">নমিনাল</span><span class="en">Nominal</span></th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-small" onclick="addLotRow('la-lots')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+            <hr class="hr">
+            <div class="action-row" id="actions-lotalloc"></div>
+            <div class="result-wrap" id="result-lotalloc"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== RECONCILIATION ===== -->
+      <section class="panel" id="panel-recon">
+        <div class="form-card">
+          <div class="form-card-head" id="head-recon"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>cGMP:</b> সহনসীমার বাইরে ভ্যারিয়েন্স মানেই ব্যাচ রিলিজের আগে ডেভিয়েশন/CAPA তদন্ত করতে হবে — এটা মেটেরিয়াল ব্যালেন্সের মূল নিয়ম।</span>
+              <span class="en"><b>cGMP:</b> Variance outside tolerance requires a deviation/CAPA investigation before batch release — a core material-balance requirement.</span>
+            </div>
+            <div id="cfg-recon"></div>
+            <div class="field-row">
+              <div class="field"><label><span class="bn">প্রকৃত উৎপাদিত কার্টন</span><span class="en">Actual cartons produced</span></label><input type="number" id="r-actual" value="25700"></div>
+              <div class="field"><label><span class="bn">Tolerance (ঐচ্ছিক)</span><span class="en">Tolerance (optional)</span></label><input type="number" step="0.001" id="r-tolerance" placeholder="0.03"></div>
+            </div>
+            <table class="rows" id="r-materials">
+              <thead><tr><th>Item#</th><th><span class="bn">বিবরণ</span><span class="en">Description</span></th><th>UoM</th><th><span class="bn">প্রতি ১০০০</span><span class="en">Qty/1000</span></th><th><span class="bn">ইস্যু</span><span class="en">Issued</span></th><th><span class="bn">ব্যবহৃত</span><span class="en">Used</span></th><th><span class="bn">বাতিল</span><span class="en">Rejected</span></th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <button class="btn btn-small" onclick="addReconRow()">+ <span class="bn">সারি</span><span class="en">row</span></button>
+            <hr class="hr">
+            <div class="action-row" id="actions-recon"></div>
+            <div class="result-wrap" id="result-recon"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SAVED BATCHES ===== -->
+      <section class="panel" id="panel-saved">
+        <div class="form-card">
+          <div class="form-card-head" id="head-saved"></div>
+          <div class="form-card-body">
+            <div class="inline-help">
+              <span class="bn"><b>21 CFR Part 11:</b> ব্যাচ রেকর্ড সংরক্ষিত, attributable ও retrievable হতে হবে — এই মডিউল সেই রেকর্ড-রিটেনশন স্তর।</span>
+              <span class="en"><b>21 CFR Part 11:</b> Batch records must be retained, attributable, and retrievable — this module is that record-retention layer.</span>
+            </div>
+
+            <div class="help-topic-nav" id="savedSubNav"></div>
+
+            <div class="saved-sub" data-sub="create">
+              <div id="cfg-saved-create"></div>
+              <div class="field-row"><div class="field"><label><span class="bn">অর্ডারকৃত কার্টন</span><span class="en">Cartons ordered</span></label><input type="number" id="sc-cartonsOrdered" value="62916"></div></div>
+              <table class="rows" id="sc-materials">
+                <thead><tr><th>Item#</th><th><span class="bn">বিবরণ</span><span class="en">Description</span></th><th>UoM</th><th><span class="bn">প্রতি ১০০০</span><span class="en">Qty/1000</span></th><th></th></tr></thead><tbody></tbody>
+              </table>
+              <button class="btn btn-small" onclick="addMaterialRow('sc-materials')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+              <hr class="hr">
+              <div class="action-row" id="actions-saved-create"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="list" style="display:none;">
+              <div class="field-row"><div class="field"><label><span class="bn">খুঁজুন (WO নং/লট নং)</span><span class="en">Search (WO#/Lot#)</span></label><input type="text" id="sl-search" placeholder="S180406-1"></div></div>
+              <div class="action-row" id="actions-saved-list"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="detail" style="display:none;">
+              <div class="field-row"><div class="field"><label>Batch ID</label><input type="number" id="sd-id"></div></div>
+              <div class="action-row" id="actions-saved-detail"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="production" style="display:none;">
+              <div class="field-row"><div class="field"><label>Batch ID</label><input type="number" id="sp-id"></div></div>
+              <table class="rows" id="sp-log">
+                <thead><tr><th><span class="bn">তারিখ</span><span class="en">Date</span></th><th><span class="bn">শিফট</span><span class="en">Shift</span></th><th><span class="bn">উৎপাদিত</span><span class="en">Produced</span></th><th><span class="bn">বাতিল</span><span class="en">Rejected</span></th><th><span class="bn">মন্তব্য</span><span class="en">Remarks</span></th><th></th></tr></thead><tbody></tbody>
+              </table>
+              <button class="btn btn-small" onclick="addLogRow('sp-log')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+              <div class="inline-help" style="margin-top:10px;">
+                <span class="bn">⚠ শুধু নতুন এন্ট্রি — append-only, পুরনোটা আবার পাঠালে ডুপ্লিকেট হবে।</span>
+                <span class="en">⚠ New entries only — append-only, resending old ones duplicates them.</span>
+              </div>
+              <hr class="hr">
+              <div class="action-row" id="actions-saved-production"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="lotalloc" style="display:none;">
+              <div class="field-row">
+                <div class="field"><label>Batch ID</label><input type="number" id="sl2-id"></div>
+                <div class="field"><label><span class="bn">উপকরণ আইটেম নং</span><span class="en">Material item#</span></label><input type="text" id="sl-material" value="BULK_CAPLET"></div>
+              </div>
+              <div class="field-row"><div class="field"><label><span class="bn">মোট প্রয়োজন</span><span class="en">Total requirement</span></label><input type="number" id="sl-total" value="1509984"></div></div>
+              <table class="rows" id="sl-lots">
+                <thead><tr><th><span class="bn">লট আইডি</span><span class="en">Lot ID</span></th><th><span class="bn">স্ট্যাটাস</span><span class="en">Status</span></th><th><span class="bn">অগ্রাধিকার</span><span class="en">Priority</span></th><th><span class="bn">ওপেনিং</span><span class="en">Opening</span></th><th><span class="bn">নমিনাল</span><span class="en">Nominal</span></th><th></th></tr></thead><tbody></tbody>
+              </table>
+              <button class="btn btn-small" onclick="addLotRow('sl-lots')">+ <span class="bn">সারি</span><span class="en">row</span></button>
+              <hr class="hr">
+              <div class="action-row" id="actions-saved-lotalloc"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="recon" style="display:none;">
+              <div class="field-row">
+                <div class="field"><label>Batch ID</label><input type="number" id="sr-id"></div>
+                <div class="field"><label><span class="bn">প্রকৃত কার্টন</span><span class="en">Actual cartons</span></label><input type="number" id="sr-actual" value="25700"></div>
+              </div>
+              <table class="rows" id="sr-materials">
+                <thead><tr><th>Item#</th><th><span class="bn">ইস্যু</span><span class="en">Issued</span></th><th><span class="bn">ব্যবহৃত</span><span class="en">Used</span></th><th><span class="bn">বাতিল</span><span class="en">Rejected</span></th><th></th></tr></thead><tbody></tbody>
+              </table>
+              <button class="btn btn-small" onclick="addReconSavedRow()">+ <span class="bn">সারি</span><span class="en">row</span></button>
+              <hr class="hr">
+              <div class="action-row" id="actions-saved-recon"></div>
+            </div>
+
+            <div class="saved-sub" data-sub="delete" style="display:none;">
+              <div class="field-row"><div class="field"><label>Batch ID</label><input type="number" id="sx-id"></div></div>
+              <div class="action-row" id="actions-saved-delete"></div>
+            </div>
+
+            <div class="result-wrap" id="result-saved"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <div class="statusbar">
+      <span><span class="bn">সংযুক্ত:</span><span class="en">Connected:</span> <span id="statusOrigin"></span></span>
+      <span id="statusMsg"><span class="bn">প্রস্তুত</span><span class="en">Ready</span></span>
+    </div>
+  </div>
+
+  <!-- ================= HELP CENTER (6 languages) ================= -->
+  <div class="modal-overlay" id="helpCenterModal">
+    <div class="modal">
+      <div class="modal-header">
+        <strong><span class="bn">সহায়তা কেন্দ্র</span><span class="en">Help Center</span></strong>
+        <button onclick="closeHelpCenter()">✕</button>
+      </div>
+      <div class="lang-tabs" id="hcLangTabs"></div>
+      <div class="help-topic-nav" id="hcTopicNav"></div>
+      <div class="modal-body" id="hcBody"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= ICONS (stroke-based, minimal) =================
+  var ICONS = {
+    hierarchy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+    material:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8l-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
+    progress:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>',
+    lottype:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+    lotalloc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h6v6H4z"/><path d="M14 13h6v6h-6z"/><path d="M4 15l6-6M20 9l-6 6" opacity="0"/><path d="M10 8h4M8 14v-2a2 2 0 0 1 2-2h4"/></svg>',
+    recon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M7 12l3 3 7-7"/></svg>',
+    saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
+    dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+    help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.3c0 1.7-2.6 1.7-2.6 3.2"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>',
+    logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+    back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>',
+    add:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    display:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+    update:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>',
+    del:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg>',
+    login:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M9 17l5-5-5-5"/><path d="M14 12H3"/></svg>'
+  };
+  function icon(name){ return ICONS[name] || ""; }
+
+  // ================= main-UI language (English/Bangla) =================
+  var LANG_KEY = "rbc.lang";
+  function setLang(l){ document.body.setAttribute("data-lang", l); localStorage.setItem(LANG_KEY, l); }
+  setLang(localStorage.getItem(LANG_KEY) || "bn");
+  ["langToggle1","langToggle2","langToggle3","langToggle4"].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b) b.addEventListener("click", function(){ setLang(document.body.getAttribute("data-lang")==="bn"?"en":"bn"); });
+  });
+
+  document.getElementById("originPill").textContent = window.location.origin;
+  document.getElementById("originPillDash").textContent = window.location.origin;
+  document.getElementById("statusOrigin").textContent = window.location.origin;
+  document.getElementById("backToDashBtn").innerHTML = icon("back");
+
+  // ================= screens =================
+  function showScreen(name){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById("screen-"+name).classList.add("active");
+    if(name === "dashboard"){
+      var u = localStorage.getItem("rbc.user");
+      document.getElementById("welcomeMsg").textContent = u ? ("· " + u) : "";
+    }
+  }
+  window.showScreen = showScreen;
+
+  // ================= demo auth (browser-only, NOT real security) =================
+  window.doLogin = function(){
+    var u = document.getElementById("login-user").value.trim();
+    if(!u){ alert("Enter a username / ইউজারনেম লিখুন"); return; }
+    localStorage.setItem("rbc.user", u);
+    showScreen("dashboard");
+  };
+  window.doRegister = function(){
+    var u = document.getElementById("reg-user").value.trim();
+    var p1 = document.getElementById("reg-pass").value;
+    var p2 = document.getElementById("reg-pass2").value;
+    if(!u){ alert("Enter a username / ইউজারনেম লিখুন"); return; }
+    if(p1 !== p2){ alert("Passwords don't match / পাসওয়ার্ড মিলছে না"); return; }
+    localStorage.setItem("rbc.user", u);
+    showScreen("dashboard");
+  };
+  window.doLogout = function(){
+    localStorage.removeItem("rbc.user");
+    showScreen("login");
+  };
+
+  // ================= dashboard tiles + tabstrip (shared tool list) =================
+  var TOOLS = [
+    {id:"hierarchy", icon:"hierarchy", en:"Hierarchy", bn:"হায়ারার্কি", descEn:"Start a batch: BFUs, caplets, bundles, shippers.", descBn:"ব্যাচ শুরু: BFU, ক্যাপলেট, বান্ডেল, শিপার।"},
+    {id:"material", icon:"material", en:"Material Requirement", bn:"উপকরণ চাহিদা", descEn:"Full-batch material issue quantities.", descBn:"পুরো ব্যাচের উপকরণ ইস্যু পরিমাণ।"},
+    {id:"progress", icon:"progress", en:"Progress", bn:"প্রোগ্রেস", descEn:"Partial production — remaining to finish.", descBn:"আংশিক উৎপাদন — বাকি কতটুকু।"},
+    {id:"lottype", icon:"lottype", en:"Lot Type", bn:"লট টাইপ", descEn:"Startup / Running / Finished per shift.", descBn:"প্রতি শিফটে Startup/Running/Finished।"},
+    {id:"lotalloc", icon:"lotalloc", en:"Lot Allocation", bn:"লট অ্যালোকেশন", descEn:"Sealed vs Exhaust lot allocation.", descBn:"Sealed বনাম Exhaust লট অ্যালোকেশন।"},
+    {id:"recon", icon:"recon", en:"Reconciliation", bn:"রিকনসিলিয়েশন", descEn:"Used / rejected / return-unused per material.", descBn:"ব্যবহৃত/বাতিল/ফেরতযোগ্য উপকরণ হিসাব।"},
+    {id:"saved", icon:"saved", en:"Saved Batches", bn:"সংরক্ষিত ব্যাচ", descEn:"Persist everything to MySQL for audit history.", descBn:"সব MySQL-এ সংরক্ষণ, অডিট হিস্ট্রির জন্য।"}
+  ];
+
+  function renderDashboard(){
+    var grid = document.getElementById("dashGrid");
+    grid.innerHTML = TOOLS.map(function(t, i){
+      return '<button class="tile" onclick="openTool(\''+t.id+'\')">' +
+        '<div class="tile-num">'+String(i+1).padStart(2,"0")+'</div>' +
+        '<div class="tile-icon">'+icon(t.icon)+'</div>' +
+        '<div class="tile-title"><span class="en">'+t.en+'</span><span class="bn">'+t.bn+'</span></div>' +
+        '<div class="tile-desc"><span class="en">'+t.descEn+'</span><span class="bn">'+t.descBn+'</span></div>' +
+      '</button>';
+    }).join("");
+  }
+  window.openTool = function(id){
+    showScreen("app");
+    showPanel(id);
+  };
+
+  function renderTabstrip(){
+    var strip = document.getElementById("tabstrip");
+    strip.innerHTML = TOOLS.map(function(t){
+      return '<button class="tab" data-panel="'+t.id+'">'+icon(t.icon)+
+        '<span class="en">'+t.en+'</span><span class="bn">'+t.bn+'</span></button>';
+    }).join("");
+    strip.querySelectorAll(".tab").forEach(function(btn){
+      btn.addEventListener("click", function(){ showPanel(btn.getAttribute("data-panel")); });
+    });
+  }
+  function showPanel(name){
+    document.querySelectorAll(".panel").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("panel-"+name).classList.add("active");
+    document.querySelectorAll(".tab[data-panel]").forEach(function(b){
+      b.setAttribute("aria-selected", b.getAttribute("data-panel")===name ? "true":"false");
+    });
+    window.scrollTo(0,0);
+  }
+
+  function renderFormHeads(){
+    TOOLS.forEach(function(t){
+      var h = document.getElementById("head-"+t.id);
+      if(!h) return;
+      h.innerHTML = icon(t.icon) + '<span class="form-card-title"><span class="en">'+t.en+'</span><span class="bn">'+t.bn+'</span></span>';
+    });
+  }
+
+  renderDashboard();
+  renderTabstrip();
+  renderFormHeads();
+  document.getElementById("helpCenterBtnApp").addEventListener("click", function(){ openHelpCenter("glossary"); });
+
+  // ================= action-row system (Add/Edit/Update/Delete/Display/Search/Back) =================
+  var LAST_RESULT_HTML = {}; // cache per panel, for the Display button
+  var BTN_DEFS = {
+    add:    {ic:"add",     en:"Add",     bn:"যোগ করুন"},
+    edit:   {ic:"update",  en:"Edit",    bn:"এডিট"},
+    update: {ic:"update",  en:"Update",  bn:"আপডেট"},
+    del:    {ic:"del",     en:"Delete",  bn:"মুছুন"},
+    display:{ic:"display", en:"Display", bn:"প্রদর্শন"},
+    search: {ic:"search",  en:"Search",  bn:"খুঁজুন"},
+    back:   {ic:"back",    en:"Back",    bn:"ফিরে যান"}
+  };
+  function mountActions(containerId, handlers){
+    var el = document.getElementById(containerId);
+    if(!el) return;
+    var order = ["add","edit","update","del","display","search","back"];
+    el.innerHTML = order.map(function(key){
+      var def = BTN_DEFS[key];
+      var has = !!handlers[key];
+      var cls = key==="add" ? "btn-primary" : (key==="del" ? "btn-danger" : "btn");
+      return '<button class="btn '+cls+'" data-act="'+key+'" '+(has?'':'disabled title="N/A for this form"')+'>'+
+        icon(def.ic) + '<span class="en">'+def.en+'</span><span class="bn">'+def.bn+'</span></button>';
+    }).join("");
+    order.forEach(function(key){
+      if(handlers[key]){
+        el.querySelector('[data-act="'+key+'"]').addEventListener("click", handlers[key]);
+      }
+    });
+  }
+  function focusFirstInput(panelId){
+    var p = document.getElementById("panel-"+panelId) || document.querySelector('.saved-sub[data-sub="'+panelId+'"]');
+    if(!p) return;
+    var inp = p.querySelector("input,select");
+    if(inp){ inp.scrollIntoView({block:"center",behavior:"smooth"}); inp.focus(); }
+  }
+  function resetPanelInputs(panelId){
+    var p = document.getElementById("panel-"+panelId);
+    if(!p) return;
+    p.querySelectorAll('.form-card-body > .field-row input, .form-card-body #cfg-'+panelId+' input').forEach(function(inp){
+      inp.value = inp.defaultValue;
+    });
+  }
+  function showLastResult(resultId){
+    document.getElementById(resultId).innerHTML = LAST_RESULT_HTML[resultId] ||
+      '<div class="result-empty"><span class="bn">এখনো কোনো ফলাফল নেই — আগে "যোগ করুন" চাপুন</span><span class="en">No result yet — press "Add" first</span></div>';
+  }
+  function scrollToResult(resultId){
+    var el = document.getElementById(resultId);
+    if(el){ el.scrollIntoView({block:"center", behavior:"smooth"}); }
+  }
+
+  // ================= config block (reused across tabs) =================
+  var DEFAULT_CONFIG = {
+    workOrderNo:"S180406-1", itemNumber:"503892",
+    description:"Imodium MSR 24ct caplets Non CR 302126200", batchLotNo:"FFC103",
+    customerName:"Kenvue Brands LLC (McNeil)",
+    capletsPerBfu:6, bfuPerCarton:4, cartonPerBundle:6, bundlePerShipper:6,
+    overagePct:0.041667
+  };
+  function configFieldsHtml(prefix){
+    return '' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Work Order No.</label><input type="text" id="'+prefix+'-workOrderNo" value="'+DEFAULT_CONFIG.workOrderNo+'"></div>' +
+        '<div class="field"><label><span class="bn">আইটেম নং</span><span class="en">Item#</span></label><input type="text" id="'+prefix+'-itemNumber" value="'+DEFAULT_CONFIG.itemNumber+'"></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label><span class="bn">বিবরণ</span><span class="en">Description</span></label><input type="text" id="'+prefix+'-description" value="'+DEFAULT_CONFIG.description+'"></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label><span class="bn">লট নং</span><span class="en">Lot no.</span></label><input type="text" id="'+prefix+'-batchLotNo" value="'+DEFAULT_CONFIG.batchLotNo+'"></div>' +
+        '<div class="field"><label><span class="bn">গ্রাহক</span><span class="en">Customer</span></label><input type="text" id="'+prefix+'-customerName" value="'+DEFAULT_CONFIG.customerName+'"></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Caplets/BFU</label><input type="number" id="'+prefix+'-capletsPerBfu" value="'+DEFAULT_CONFIG.capletsPerBfu+'"></div>' +
+        '<div class="field"><label>BFU/Carton</label><input type="number" id="'+prefix+'-bfuPerCarton" value="'+DEFAULT_CONFIG.bfuPerCarton+'"></div>' +
+        '<div class="field"><label>Carton/Bundle</label><input type="number" id="'+prefix+'-cartonPerBundle" value="'+DEFAULT_CONFIG.cartonPerBundle+'"></div>' +
+        '<div class="field"><label>Bundle/Shipper</label><input type="number" id="'+prefix+'-bundlePerShipper" value="'+DEFAULT_CONFIG.bundlePerShipper+'"></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Overage %</label><input type="number" step="0.000001" id="'+prefix+'-overagePct" value="'+DEFAULT_CONFIG.overagePct+'"></div>' +
+      '</div>';
+  }
+  function readConfig(prefix){
+    return {
+      workOrderNo: val(prefix+'-workOrderNo'), itemNumber: val(prefix+'-itemNumber'),
+      description: val(prefix+'-description'), batchLotNo: val(prefix+'-batchLotNo'),
+      customerName: val(prefix+'-customerName'),
+      capletsPerBfu: num(prefix+'-capletsPerBfu'), bfuPerCarton: num(prefix+'-bfuPerCarton'),
+      cartonPerBundle: num(prefix+'-cartonPerBundle'), bundlePerShipper: num(prefix+'-bundlePerShipper'),
+      overagePct: num(prefix+'-overagePct')
+    };
+  }
+  ["cfg-hierarchy","cfg-material","cfg-recon","cfg-saved-create"].forEach(function(id){
+    document.getElementById(id).innerHTML = configFieldsHtml(id);
+  });
+  function val(id){ return document.getElementById(id).value; }
+  function num(id){ return parseFloat(document.getElementById(id).value); }
+
+  // ================= dynamic row builders =================
+  var DEFAULT_MATERIALS = [
+    ["106944","Vinyl Klockner PA 160/02 .010 PVC 220mm (foil)","lb",27.97],
+    ["125112","Shipper - Imodium Generic 30048350","EA",27.78],
+    ["129913","Carton - Imodium MSR 24ct Cap NonCR 30054636","EA",1000.00]
+  ];
+  var DEFAULT_LOG = [
+    ["2026-07-09","A",8500,50,"Batch start"],
+    ["2026-07-09","B",8200,30,""],
+    ["2026-07-10","A",9000,0,""]
+  ];
+  var DEFAULT_LOTS = [
+    ["6CV1111","OPEN_PARTIAL",1,620000,620000],
+    ["6CV1191","OPEN_PARTIAL",2,580000,580000],
+    ["6CV1201","OPEN_PARTIAL",3,250000,250000],
+    ["6CV1250","SEALED",4,500000,500000]
+  ];
+  var DEFAULT_RECON = [
+    ["106944",1833.08,756.27,35.0],
+    ["125112",1820.63,751.13,10.0],
+    ["129913",65537.52,27038.55,120.0]
+  ];
+  function tbody(tableId){ return document.getElementById(tableId).querySelector("tbody"); }
+  function esc(v){ return String(v==null?"":v).replace(/"/g,"&quot;"); }
+
+  window.addMaterialRow = function(tableId, vals){
+    vals = vals || ["","","",""];
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="'+esc(vals[0])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[1])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[2])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[3])+'"></td>' +
+      '<td><button class="row-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody(tableId).appendChild(tr);
+  };
+  window.addLogRow = function(tableId, vals){
+    vals = vals || ["2026-01-01","A",0,0,""];
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="date" value="'+esc(vals[0])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[1])+'" style="width:40px"></td>' +
+      '<td><input type="number" value="'+esc(vals[2])+'"></td>' +
+      '<td><input type="number" value="'+esc(vals[3])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[4])+'"></td>' +
+      '<td><button class="row-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody(tableId).appendChild(tr);
+  };
+  window.addLotRow = function(tableId, vals){
+    vals = vals || ["","OPEN_PARTIAL",1,0,0];
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="'+esc(vals[0])+'"></td>' +
+      '<td><select>' +
+        '<option value="SEALED"'+(vals[1]==="SEALED"?" selected":"")+'>SEALED</option>' +
+        '<option value="OPEN_PARTIAL"'+(vals[1]==="OPEN_PARTIAL"?" selected":"")+'>OPEN_PARTIAL</option>' +
+        '<option value="EXHAUSTED"'+(vals[1]==="EXHAUSTED"?" selected":"")+'>EXHAUSTED</option>' +
+      '</select></td>' +
+      '<td><input type="number" value="'+esc(vals[2])+'" style="width:44px"></td>' +
+      '<td><input type="number" value="'+esc(vals[3])+'"></td>' +
+      '<td><input type="number" value="'+esc(vals[4])+'"></td>' +
+      '<td><button class="row-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody(tableId).appendChild(tr);
+  };
+  window.addReconRow = function(vals){
+    vals = vals || ["","","",""];
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="'+esc(vals[0])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[1])+'"></td>' +
+      '<td><input type="text" value="'+esc(vals[2])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[3])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[4])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[5])+'"></td>' +
+      '<td><button class="row-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody("r-materials").appendChild(tr);
+  };
+  window.addReconSavedRow = function(vals){
+    vals = vals || ["","","",""];
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="text" value="'+esc(vals[0])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[1])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[2])+'"></td>' +
+      '<td><input type="number" step="0.01" value="'+esc(vals[3])+'"></td>' +
+      '<td><button class="row-remove" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    tbody("sr-materials").appendChild(tr);
+  };
+
+  function reseedTable(tableId, builder, data){
+    tbody(tableId).innerHTML = "";
+    data.forEach(function(row){ builder(tableId, row); });
+  }
+
+  function seedAll(){
+    reseedTable("m-materials", addMaterialRow, DEFAULT_MATERIALS);
+    reseedTable("sc-materials", addMaterialRow, DEFAULT_MATERIALS);
+    reseedTable("p-log", addLogRow, DEFAULT_LOG);
+    reseedTable("lt-log", addLogRow, DEFAULT_LOG);
+    tbody("sp-log").innerHTML = ""; addLogRow("sp-log", ["2026-07-11","A",0,0,""]);
+    reseedTable("la-lots", addLotRow, DEFAULT_LOTS);
+    reseedTable("sl-lots", addLotRow, DEFAULT_LOTS);
+    tbody("r-materials").innerHTML = "";
+    tbody("sr-materials").innerHTML = "";
+    DEFAULT_RECON.forEach(function(r){
+      addReconRow([r[0], "", "", r[1], r[2], r[3]]);
+      addReconSavedRow([r[0], r[1], r[2], r[3]]);
+    });
+    var meta = {"106944":["Vinyl Klockner PA foil","lb",27.97],"125112":["Shipper Imodium Generic","EA",27.78],"129913":["Carton Imodium MSR","EA",1000.0]};
+    document.querySelectorAll("#r-materials tbody tr").forEach(function(tr){
+      var inputs = tr.querySelectorAll("input");
+      var m = meta[inputs[0].value];
+      if(m){ inputs[1].value = m[0]; inputs[2].value = m[1]; inputs[3].value = m[2]; }
+    });
+  }
+  seedAll();
+
+  function resetInputsIn(selector){
+    document.querySelectorAll(selector).forEach(function(inp){ inp.value = inp.defaultValue; });
+  }
+  function resetHierarchy(){ resetInputsIn("#cfg-hierarchy input"); resetInputsIn("#h-cartonsOrdered"); }
+  function resetMaterial(){ resetInputsIn("#cfg-material input"); resetInputsIn("#m-cartonsOrdered"); reseedTable("m-materials", addMaterialRow, DEFAULT_MATERIALS); }
+  function resetProgress(){ resetInputsIn("#p-target"); reseedTable("p-log", addLogRow, DEFAULT_LOG); }
+  function resetLotType(){ resetInputsIn("#lt-target"); reseedTable("lt-log", addLogRow, DEFAULT_LOG); }
+  function resetLotAlloc(){ resetInputsIn("#la-total"); reseedTable("la-lots", addLotRow, DEFAULT_LOTS); }
+  function resetRecon(){
+    resetInputsIn("#cfg-recon input"); resetInputsIn("#r-actual"); document.getElementById("r-tolerance").value = "";
+    tbody("r-materials").innerHTML = "";
+    var meta = {"106944":["Vinyl Klockner PA foil","lb",27.97],"125112":["Shipper Imodium Generic","EA",27.78],"129913":["Carton Imodium MSR","EA",1000.0]};
+    DEFAULT_RECON.forEach(function(r){ addReconRow([r[0], meta[r[0]][0], meta[r[0]][1], r[1], r[2], r[3]]); });
+  }
+  function resetSavedCreate(){ resetInputsIn("#cfg-saved-create input"); resetInputsIn("#sc-cartonsOrdered"); reseedTable("sc-materials", addMaterialRow, DEFAULT_MATERIALS); }
+
+  function readMaterialRows(tableId){
+    var out = [];
+    tbody(tableId).querySelectorAll("tr").forEach(function(tr){
+      var i = tr.querySelectorAll("input");
+      out.push({itemNumber:i[0].value, description:i[1].value, unitOfMeasure:i[2].value, baseQtyPer1000Cartons:parseFloat(i[3].value)});
+    });
+    return out;
+  }
+  function readLogRows(tableId){
+    var out = [];
+    tbody(tableId).querySelectorAll("tr").forEach(function(tr){
+      var i = tr.querySelectorAll("input");
+      out.push({date:i[0].value, shift:i[1].value, cartonsProduced:parseFloat(i[2].value)||0, cartonsRejected:parseFloat(i[3].value)||0, remarks:i[4].value});
+    });
+    return out;
+  }
+  function readLotRows(tableId){
+    var out = [];
+    tbody(tableId).querySelectorAll("tr").forEach(function(tr){
+      var i = tr.querySelectorAll("input");
+      var s = tr.querySelector("select").value;
+      out.push({lotId:i[0].value, status:s, priority:parseInt(i[1].value)||0, openingBalance:parseFloat(i[2].value)||0, nominalQty:parseFloat(i[3].value)||0});
+    });
+    return out;
+  }
+  function readReconRows(){
+    var issued={}, used={}, rejected={}, materials=[];
+    tbody("r-materials").querySelectorAll("tr").forEach(function(tr){
+      var i = tr.querySelectorAll("input");
+      var item = i[0].value;
+      materials.push({itemNumber:item, description:i[1].value, unitOfMeasure:i[2].value, baseQtyPer1000Cartons:parseFloat(i[3].value)||0});
+      issued[item]=parseFloat(i[4].value)||0; used[item]=parseFloat(i[5].value)||0; rejected[item]=parseFloat(i[6].value)||0;
+    });
+    return {materials:materials, issued:issued, used:used, rejected:rejected};
+  }
+  function readReconSavedRows(){
+    var issued={}, used={}, rejected={};
+    tbody("sr-materials").querySelectorAll("tr").forEach(function(tr){
+      var i = tr.querySelectorAll("input");
+      var item = i[0].value;
+      issued[item]=parseFloat(i[1].value)||0; used[item]=parseFloat(i[2].value)||0; rejected[item]=parseFloat(i[3].value)||0;
+    });
+    return {issued:issued, used:used, rejected:rejected};
+  }
+
+  // ================= fetch helper =================
+  function setStatus(msgBn, msgEn){
+    document.getElementById("statusMsg").innerHTML = '<span class="bn">'+msgBn+'</span><span class="en">'+msgEn+'</span>';
+  }
+  function showLoading(id){
+    document.getElementById(id).innerHTML = '<div class="result-empty"><span class="bn">চলছে…</span><span class="en">Running…</span></div>';
+  }
+  function callApi(resultId, method, url, body){
+    showLoading(resultId);
+    setStatus("চলছে…","Running…");
+    return fetch(url, {
+      method: method,
+      headers: body ? {"Content-Type":"application/json"} : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function(res){
+      return res.text().then(function(text){
+        var json = null;
+        try { json = text ? JSON.parse(text) : null; } catch(e){}
+        return {status: res.status, ok: res.ok, json: json, raw: text};
+      });
+    }).then(function(r){
+      setStatus(r.ok ? "সম্পন্ন" : "এরর — status "+r.status, r.ok ? "Done" : "Error — status "+r.status);
+      return r;
+    }).catch(function(err){
+      setStatus("নেটওয়ার্ক এরর","Network error");
+      document.getElementById(resultId).innerHTML =
+        '<div class="result-status err">✕ <span class="bn">সংযোগ ব্যর্থ — ব্যাকএন্ড কি চালু আছে?</span><span class="en">Connection failed — is the backend running?</span></div>';
+      throw err;
+    });
+  }
+  function statusBlock(r){
+    var cls = r.ok ? "ok" : "err"; var mark = r.ok ? "✓" : "✕";
+    return '<div class="result-status '+cls+'">'+mark+' HTTP '+r.status+'</div>';
+  }
+  function rawJsonBlock(r){ return '<pre class="result-json">'+esc(r.raw ? formatJson(r.raw) : "")+'</pre>'; }
+  function formatJson(text){ try { return JSON.stringify(JSON.parse(text), null, 2); } catch(e){ return text; } }
+  function fmt(n){ if(n==null) return ""; return (typeof n === "number") ? n.toLocaleString(undefined,{maximumFractionDigits:2}) : n; }
+  function setResult(resultId, html){ LAST_RESULT_HTML[resultId] = html; document.getElementById(resultId).innerHTML = html; }
+
+  // ================= RUNNERS =================
+  function runHierarchy(){
+    var body = {config: readConfig("cfg-hierarchy"), cartonsOrdered: num("h-cartonsOrdered")};
+    callApi("result-hierarchy","POST", "/api/batch/hierarchy", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        var j = r.json;
+        html += '<table class="out"><tr><th><span class="bn">স্তর</span><span class="en">Level</span></th><th><span class="bn">পরিমাণ</span><span class="en">Qty</span></th></tr>' +
+          '<tr><td>Cartons</td><td>'+fmt(j.cartons)+'</td></tr><tr><td>BFUs</td><td>'+fmt(j.bfus)+'</td></tr>' +
+          '<tr><td>Caplets</td><td>'+fmt(j.caplets)+'</td></tr><tr><td>Bundles</td><td>'+fmt(j.bundles)+'</td></tr>' +
+          '<tr><td>Shippers</td><td>'+fmt(j.shippers)+'</td></tr></table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-hierarchy", html);
+    });
+  }
+  function runMaterial(){
+    var body = {config: readConfig("cfg-material"), cartonsOrdered: num("m-cartonsOrdered"), materials: readMaterialRows("m-materials")};
+    callApi("result-material","POST","/api/batch/material-requirement", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        html += '<table class="out"><tr><th>Item#</th><th><span class="bn">বেস</span><span class="en">Base</span></th><th><span class="bn">ওভারেজ</span><span class="en">Overage</span></th><th><span class="bn">মোট ইস্যু</span><span class="en">Total issue</span></th></tr>';
+        r.json.forEach(function(m){
+          html += '<tr><td>'+m.material.itemNumber+' <span style="color:#5B5A52">('+m.material.unitOfMeasure+')</span></td><td>'+fmt(m.baseRequired)+'</td><td>'+fmt(m.overageQty)+'</td><td><b>'+fmt(m.totalToIssue)+'</b></td></tr>';
+        });
+        html += '</table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-material", html);
+    });
+  }
+  function runProgress(){
+    var body = {targetCartons: num("p-target"), log: readLogRows("p-log")};
+    callApi("result-progress","POST","/api/batch/progress", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        var j = r.json;
+        html += '<table class="out">' +
+          '<tr><td><span class="bn">টার্গেট</span><span class="en">Target</span></td><td>'+fmt(j.targetCartons)+'</td></tr>' +
+          '<tr><td><span class="bn">উৎপাদিত (মোট)</span><span class="en">Produced (cum.)</span></td><td>'+fmt(j.cumulativeProducedCartons)+'</td></tr>' +
+          '<tr><td><span class="bn">বাতিল (মোট)</span><span class="en">Rejected (cum.)</span></td><td>'+fmt(j.cumulativeRejectedCartons)+'</td></tr>' +
+          '<tr><td><span class="bn">বাকি</span><span class="en">Remaining</span></td><td><b>'+fmt(j.remainingCartons)+'</b></td></tr>' +
+          '<tr><td>% <span class="bn">সম্পন্ন</span><span class="en">complete</span></td><td>'+(j.percentComplete*100).toFixed(1)+'%</td></tr>' +
+          '<tr><td><span class="bn">স্ট্যাটাস</span><span class="en">Status</span></td><td>'+(j.complete? '<span class="flag-ok">COMPLETE</span>':'<span class="flag-warn">IN PROGRESS</span>')+'</td></tr></table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-progress", html);
+    });
+  }
+  function runLotType(){
+    var body = {targetCartons: num("lt-target"), log: readLogRows("lt-log")};
+    callApi("result-lottype","POST","/api/batch/lot-type", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        html += '<table class="out"><tr><th><span class="bn">তারিখ</span><span class="en">Date</span></th><th><span class="bn">শিফট</span><span class="en">Shift</span></th><th><span class="bn">উৎপাদিত</span><span class="en">Produced</span></th><th><span class="bn">মোট</span><span class="en">Cum.</span></th><th><span class="bn">বাকি</span><span class="en">Outstanding</span></th><th>Type</th></tr>';
+        r.json.forEach(function(e){
+          var cls = e.lotType==="FINISHED" ? "flag-ok" : (e.lotType==="STARTUP" ? "flag-warn" : "");
+          html += '<tr><td>'+e.date+'</td><td>'+e.shift+'</td><td>'+fmt(e.cartonsProduced)+'</td><td>'+fmt(e.cumulativeProduced)+'</td><td>'+fmt(e.outstanding)+'</td><td class="'+cls+'">'+e.lotType+'</td></tr>';
+        });
+        html += '</table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-lottype", html);
+    });
+  }
+  function runLotAlloc(){
+    var body = {totalRequirement: num("la-total"), lots: readLotRows("la-lots")};
+    callApi("result-lotalloc","POST","/api/batch/lot-allocation", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        html += '<table class="out"><tr><th>Lot</th><th><span class="bn">ওপেনিং</span><span class="en">Opening</span></th><th><span class="bn">ইস্যু</span><span class="en">Issued</span></th><th><span class="bn">ক্লোজিং</span><span class="en">Closing</span></th><th><span class="bn">নতুন স্ট্যাটাস</span><span class="en">New status</span></th></tr>';
+        r.json.forEach(function(l){
+          var cls = l.newStatus==="EXHAUSTED" ? "flag-ok" : (l.newStatus==="OPEN_PARTIAL" ? "flag-warn":"");
+          html += '<tr><td>'+l.lotId+'</td><td>'+fmt(l.openingBalance)+'</td><td>'+fmt(l.qtyIssued)+'</td><td>'+fmt(l.closingBalance)+'</td><td class="'+cls+'">'+l.newStatus+'</td></tr>';
+        });
+        html += '</table>';
+      } else if(!r.ok && r.json && r.json.error){
+        html += '<div class="result-status err"><span class="bn">⚠ ঘাটতি/এরর: </span><span class="en">⚠ Error: </span>'+esc(r.json.error)+'</div>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-lotalloc", html);
+    });
+  }
+  function runRecon(){
+    var rows = readReconRows();
+    var body = {config: readConfig("cfg-recon"), materials: rows.materials, actualCartonsProduced: num("r-actual"),
+      qtyIssuedByItem: rows.issued, qtyUsedByItem: rows.used, qtyRejectedByItem: rows.rejected};
+    var tol = val("r-tolerance"); if(tol) body.tolerance = parseFloat(tol);
+    callApi("result-recon","POST","/api/batch/reconciliation", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        html += '<table class="out"><tr><th>Item#</th><th><span class="bn">তাত্ত্বিক</span><span class="en">Theoretical</span></th><th><span class="bn">ব্যবহৃত</span><span class="en">Used</span></th><th><span class="bn">ফেরত</span><span class="en">Return</span></th><th><span class="bn">ভ্যারিয়েন্স</span><span class="en">Variance</span></th><th>OK?</th></tr>';
+        r.json.forEach(function(l){
+          var cls = l.withinTolerance ? "flag-ok" : "flag-bad";
+          html += '<tr><td>'+l.itemNumber+'</td><td>'+fmt(l.theoreticalRequired)+'</td><td>'+fmt(l.qtyActuallyUsed)+'</td><td>'+fmt(l.qtyToReturn)+'</td><td>'+(l.variancePct*100).toFixed(2)+'%</td><td class="'+cls+'">'+(l.withinTolerance?"✓":"✕")+'</td></tr>';
+        });
+        html += '</table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-recon", html);
+    });
+  }
+
+  // action rows — stateless tabs
+  mountActions("actions-hierarchy", { add:runHierarchy, edit:function(){focusFirstInput("hierarchy");}, update:runHierarchy, del:resetHierarchy, display:function(){showLastResult("result-hierarchy");}, search:function(){scrollToResult("result-hierarchy");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-material", { add:runMaterial, edit:function(){focusFirstInput("material");}, update:runMaterial, del:resetMaterial, display:function(){showLastResult("result-material");}, search:function(){scrollToResult("result-material");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-progress", { add:runProgress, edit:function(){focusFirstInput("progress");}, update:runProgress, del:resetProgress, display:function(){showLastResult("result-progress");}, search:function(){scrollToResult("result-progress");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-lottype", { add:runLotType, edit:function(){focusFirstInput("lottype");}, update:runLotType, del:resetLotType, display:function(){showLastResult("result-lottype");}, search:function(){scrollToResult("result-lottype");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-lotalloc", { add:runLotAlloc, edit:function(){focusFirstInput("lotalloc");}, update:runLotAlloc, del:resetLotAlloc, display:function(){showLastResult("result-lotalloc");}, search:function(){scrollToResult("result-lotalloc");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-recon", { add:runRecon, edit:function(){focusFirstInput("recon");}, update:runRecon, del:resetRecon, display:function(){showLastResult("result-recon");}, search:function(){scrollToResult("result-recon");}, back:function(){showScreen("dashboard");} });
+
+  // ================= SAVED BATCHES =================
+  var SAVED_SUBS = [
+    {id:"create", ic:"add", en:"Create", bn:"তৈরি করুন"},
+    {id:"list", ic:"search", en:"Search / List", bn:"খুঁজুন/তালিকা"},
+    {id:"detail", ic:"display", en:"Display", bn:"প্রদর্শন"},
+    {id:"production", ic:"update", en:"Update (production)", bn:"আপডেট (প্রোডাকশন)"},
+    {id:"lotalloc", ic:"lotalloc", en:"Lot Allocation", bn:"লট অ্যালোকেশন"},
+    {id:"recon", ic:"recon", en:"Reconciliation", bn:"রিকনসিলিয়েশন"},
+    {id:"delete", ic:"del", en:"Delete", bn:"মুছুন"}
+  ];
+  function renderSavedSubNav(){
+    var nav = document.getElementById("savedSubNav");
+    nav.innerHTML = SAVED_SUBS.map(function(s){
+      return '<button data-sub="'+s.id+'" aria-selected="'+(s.id==="create"?"true":"false")+'">'+icon(s.ic)+
+        '<span class="en">'+s.en+'</span><span class="bn">'+s.bn+'</span></button>';
+    }).join("");
+    nav.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var sub = btn.getAttribute("data-sub");
+        nav.querySelectorAll("button").forEach(function(b){ b.setAttribute("aria-selected", b===btn ? "true":"false"); });
+        document.querySelectorAll(".saved-sub").forEach(function(s){ s.style.display = (s.getAttribute("data-sub")===sub) ? "block":"none"; });
+        document.getElementById("result-saved").innerHTML = "";
+      });
+    });
+  }
+  renderSavedSubNav();
+
+  function savedCreate(){
+    var body = {config: readConfig("cfg-saved-create"), cartonsOrdered: num("sc-cartonsOrdered"), materials: readMaterialRows("sc-materials")};
+    callApi("result-saved","POST","/api/batch/records", body).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        html += '<div class="result-status ok"><span class="bn">তৈরি হয়েছে, Batch ID = </span><span class="en">Created, Batch ID = </span><b>'+r.json.id+'</b></div>';
+        ["sd-id","sp-id","sl2-id","sr-id","sx-id"].forEach(function(id){ document.getElementById(id).value = r.json.id; });
+      }
+      html += rawJsonBlock(r);
+      setResult("result-saved", html);
+    });
+  }
+  function savedList(){
+    callApi("result-saved","GET","/api/batch/records").then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        var q = (val("sl-search")||"").toLowerCase().trim();
+        var rows = r.json.filter(function(b){
+          if(!q) return true;
+          return (b.workOrderNo||"").toLowerCase().includes(q) || (b.batchLotNo||"").toLowerCase().includes(q);
+        });
+        html += '<table class="out"><tr><th>ID</th><th>WO#</th><th>Lot#</th><th>Cartons</th><th>Created</th></tr>';
+        rows.forEach(function(b){
+          html += '<tr><td>'+b.id+'</td><td>'+b.workOrderNo+'</td><td>'+b.batchLotNo+'</td><td>'+fmt(b.cartonsOrdered)+'</td><td>'+(b.createdAt||"").substring(0,19).replace("T"," ")+'</td></tr>';
+        });
+        html += '</table>';
+        if(q && rows.length===0){
+          html += '<div class="result-status err"><span class="bn">কোনো মিল পাওয়া যায়নি</span><span class="en">No matches found</span></div>';
+        }
+      }
+      html += rawJsonBlock(r);
+      setResult("result-saved", html);
+    });
+  }
+  function savedDetail(){
+    var id = val("sd-id");
+    callApi("result-saved","GET","/api/batch/records/"+id).then(function(r){
+      var html = statusBlock(r);
+      if(r.ok && r.json){
+        var j = r.json;
+        html += '<h3 style="margin:6px 0;">'+j.workOrderNo+' — '+j.batchLotNo+'</h3>';
+        html += '<table class="out"><tr><th><span class="bn">উপকরণ</span><span class="en">Materials</span></th><td>'+j.materials.length+'</td></tr>' +
+                '<tr><th><span class="bn">প্রোডাকশন এন্ট্রি</span><span class="en">Production entries</span></th><td>'+j.productionLog.length+'</td></tr>' +
+                '<tr><th><span class="bn">লট ব্যালেন্স</span><span class="en">Lot balances</span></th><td>'+j.lotBalances.length+'</td></tr>' +
+                '<tr><th><span class="bn">রিকনসিলিয়েশন</span><span class="en">Reconciliation</span></th><td>'+j.reconciliationRecords.length+'</td></tr></table>';
+      }
+      html += rawJsonBlock(r);
+      setResult("result-saved", html);
+    });
+  }
+  function savedProduction(){
+    var id = val("sp-id");
+    callApi("result-saved","POST","/api/batch/records/"+id+"/production", readLogRows("sp-log")).then(function(r){
+      setResult("result-saved", statusBlock(r) + rawJsonBlock(r));
+    });
+  }
+  function savedLotAlloc(){
+    var id = val("sl2-id");
+    var body = {materialItemNumber: val("sl-material"), totalRequirement: num("sl-total"), lots: readLotRows("sl-lots")};
+    callApi("result-saved","POST","/api/batch/records/"+id+"/lot-allocation", body).then(function(r){
+      setResult("result-saved", statusBlock(r) + rawJsonBlock(r));
+    });
+  }
+  function savedRecon(){
+    var id = val("sr-id");
+    var rows = readReconSavedRows();
+    var body = {actualCartonsProduced: num("sr-actual"), qtyIssuedByItem: rows.issued, qtyUsedByItem: rows.used, qtyRejectedByItem: rows.rejected};
+    callApi("result-saved","POST","/api/batch/records/"+id+"/reconciliation", body).then(function(r){
+      setResult("result-saved", statusBlock(r) + rawJsonBlock(r));
+    });
+  }
+  function savedDelete(){
+    var id = val("sx-id");
+    if(!confirm("Delete batch " + id + "? This cannot be undone.")) return;
+    callApi("result-saved","DELETE","/api/batch/records/"+id).then(function(r){
+      var html = statusBlock(r);
+      html += r.ok ? '<div class="result-status ok"><span class="bn">মুছে ফেলা হয়েছে</span><span class="en">Deleted</span></div>' : rawJsonBlock(r);
+      setResult("result-saved", html);
+    });
+  }
+
+  mountActions("actions-saved-create", { add:savedCreate, edit:function(){focusFirstInput("create");}, del:resetSavedCreate, display:function(){showLastResult("result-saved");}, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-list", { search:savedList, display:savedList, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-detail", { display:savedDetail, search:savedDetail, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-production", { add:savedProduction, update:savedProduction, display:savedDetail, del:function(){ tbody("sp-log").innerHTML=""; addLogRow("sp-log", ["2026-07-11","A",0,0,""]); }, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-lotalloc", { add:savedLotAlloc, update:savedLotAlloc, display:savedDetail, del:function(){ reseedTable("sl-lots", addLotRow, DEFAULT_LOTS); }, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-recon", { add:savedRecon, update:savedRecon, display:savedDetail, back:function(){showScreen("dashboard");} });
+  mountActions("actions-saved-delete", { del:savedDelete, back:function(){showScreen("dashboard");} });
+
+  // ================= HELP CENTER (6 languages) =================
+  var HC_LANGS = [
+    {id:"en", label:"English"},
+    {id:"bn", label:"বাংলা"},
+    {id:"es", label:"Español"},
+    {id:"fr", label:"Français"},
+    {id:"ar", label:"العربية"},
+    {id:"zh", label:"中文"}
+  ];
+  var HC_TOPICS = [
+    {id:"glossary", ic:"help", labels:{en:"Key Terms",bn:"পরিভাষা",es:"Términos clave",fr:"Termes clés",ar:"المصطلحات",zh:"术语"}},
+    {id:"hierarchy", ic:"hierarchy", labels:{en:"Hierarchy",bn:"হায়ারার্কি",es:"Jerarquía",fr:"Hiérarchie",ar:"التسلسل",zh:"层级"}},
+    {id:"material", ic:"material", labels:{en:"Material Req.",bn:"উপকরণ চাহিদা",es:"Materiales",fr:"Matériaux",ar:"المواد",zh:"物料需求"}},
+    {id:"progress", ic:"progress", labels:{en:"Progress",bn:"প্রোগ্রেস",es:"Progreso",fr:"Progression",ar:"التقدم",zh:"进度"}},
+    {id:"lottype", ic:"lottype", labels:{en:"Lot Type",bn:"লট টাইপ",es:"Tipo de lote",fr:"Type de lot",ar:"نوع الدفعة",zh:"批次类型"}},
+    {id:"lotalloc", ic:"lotalloc", labels:{en:"Lot Allocation",bn:"লট অ্যালোকেশন",es:"Asignación",fr:"Allocation",ar:"تخصيص الدفعات",zh:"批次分配"}},
+    {id:"recon", ic:"recon", labels:{en:"Reconciliation",bn:"রিকনসিলিয়েশন",es:"Reconciliación",fr:"Réconciliation",ar:"التسوية",zh:"物料平衡"}},
+    {id:"saved", ic:"saved", labels:{en:"Saved Batches",bn:"সংরক্ষিত ব্যাচ",es:"Lotes guardados",fr:"Lots enregistrés",ar:"الدفعات المحفوظة",zh:"已保存批次"}}
+  ];
+
+  var GLOSSARY = {
+en: `<h3>GMP / cGMP</h3><p><b>GMP</b> (Good Manufacturing Practice) is the set of regulations governing how pharmaceutical products must be produced and controlled. <b>cGMP</b> ("current" GMP) means those practices must reflect up-to-date methods and technology — it's not a separate rulebook, it's GMP held to a continuously-updated standard.</p>
+<h3>EHS</h3><p><b>EHS</b> (Environment, Health & Safety) covers protecting workers, the public, and the environment from hazards in the manufacturing process — exposure control, waste handling, and incident prevention. In packaging operations, EHS intersects with GMP wherever material handling, open containers, or rejects/waste are involved.</p>
+<h3>OEB Class (Occupational Exposure Band)</h3><p>OEB bands classify how hazardous a material is to handle, driving containment and PPE requirements. Bands are company-specific but typically follow this shape:</p>
+<table class="terms"><tr><th>Band</th><th>Typical hazard level</th><th>Typical controls</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>Low</td><td>General handling, standard PPE</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>Low–moderate</td><td>Local exhaust, standard PPE (this project's own AQL report is OEB 2)</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>Moderate</td><td>Engineering controls, closed transfer</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>High</td><td>Dedicated facility/containment</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>Very high (potent)</td><td>Full isolator containment</td></tr></table>
+<p style="font-size:11.5px;color:var(--text-dim);">Exact cutoffs vary by company/OEL scheme — treat this as illustrative, not a universal standard.</p>`,
+bn: `<h3>GMP / cGMP</h3><p><b>GMP</b> (Good Manufacturing Practice) হলো ফার্মাসিউটিক্যাল প্রোডাক্ট কীভাবে উৎপাদন ও নিয়ন্ত্রণ করতে হবে তার নিয়মাবলী। <b>cGMP</b> ("current" GMP) মানে এই প্র্যাকটিসগুলো আধুনিক পদ্ধতি ও প্রযুক্তি প্রতিফলিত করতে হবে — এটা আলাদা কোনো নিয়ম নয়, বরং সবসময় আপডেটেড রাখা GMP।</p>
+<h3>EHS</h3><p><b>EHS</b> (Environment, Health & Safety) কর্মী, জনসাধারণ ও পরিবেশকে উৎপাদন প্রক্রিয়ার ঝুঁকি থেকে রক্ষা করা কভার করে — exposure নিয়ন্ত্রণ, বর্জ্য ব্যবস্থাপনা, দুর্ঘটনা প্রতিরোধ। প্যাকেজিং অপারেশনে EHS আর GMP মিলে যায় যেখানেই উপকরণ হ্যান্ডলিং, খোলা কন্টেইনার, বা বাতিল/বর্জ্য জড়িত।</p>
+<h3>OEB ক্লাস (Occupational Exposure Band)</h3><p>OEB ব্যান্ড একটা উপকরণ হ্যান্ডল করা কতটা ঝুঁকিপূর্ণ তা শ্রেণীবদ্ধ করে, যা containment ও PPE চাহিদা নির্ধারণ করে। ব্যান্ডগুলো কোম্পানি-নির্দিষ্ট হলেও সাধারণত এরকম:</p>
+<table class="terms"><tr><th>ব্যান্ড</th><th>সাধারণ ঝুঁকি স্তর</th><th>সাধারণ নিয়ন্ত্রণ</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>নিম্ন</td><td>সাধারণ হ্যান্ডলিং, স্ট্যান্ডার্ড PPE</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>নিম্ন-মাঝারি</td><td>লোকাল এক্সহস্ট, স্ট্যান্ডার্ড PPE (এই প্রজেক্টের আসল AQL রিপোর্ট OEB 2)</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>মাঝারি</td><td>ইঞ্জিনিয়ারিং কন্ট্রোল, ক্লোজড ট্রান্সফার</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>উচ্চ</td><td>ডেডিকেটেড ফ্যাসিলিটি/কনটেইনমেন্ট</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>অতি উচ্চ (potent)</td><td>সম্পূর্ণ আইসোলেটর কনটেইনমেন্ট</td></tr></table>
+<p style="font-size:11.5px;color:var(--text-dim);">সঠিক সীমা কোম্পানি/OEL স্কিম অনুযায়ী ভিন্ন হয় — এটাকে সার্বজনীন মান নয়, উদাহরণ হিসেবে ধরুন।</p>`,
+es: `<h3>GMP / cGMP</h3><p><b>GMP</b> (Buenas Prácticas de Manufactura) son las normas que rigen la producción farmacéutica. <b>cGMP</b> significa que esas prácticas deben reflejar métodos y tecnología actualizados.</p>
+<h3>EHS</h3><p><b>EHS</b> (Medio Ambiente, Salud y Seguridad) protege a los trabajadores y al entorno de los riesgos del proceso de fabricación — control de exposición, manejo de residuos, prevención de incidentes.</p>
+<h3>Clase OEB</h3><p>Las bandas OEB clasifican el riesgo de manipular un material, determinando el contenimiento y el EPP necesarios:</p>
+<table class="terms"><tr><th>Banda</th><th>Nivel</th><th>Control típico</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>Bajo</td><td>Manejo general</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>Bajo-moderado</td><td>Extracción local (el informe AQL real de este proyecto es OEB 2)</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>Moderado</td><td>Controles de ingeniería</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>Alto</td><td>Instalación dedicada</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>Muy alto</td><td>Contenimiento total</td></tr></table>
+<p style="font-size:11.5px;color:var(--text-dim);">Los límites exactos varían según la empresa — tómelo como referencia, no como estándar universal.</p>`,
+fr: `<h3>GMP / cGMP</h3><p>Les <b>BPF</b> (Bonnes Pratiques de Fabrication, GMP) régissent la production pharmaceutique. <b>cGMP</b> signifie que ces pratiques doivent refléter des méthodes et technologies actuelles.</p>
+<h3>EHS</h3><p><b>EHS</b> (Environnement, Santé, Sécurité) protège les travailleurs et l'environnement des risques du procédé — contrôle de l'exposition, gestion des déchets, prévention des incidents.</p>
+<h3>Classe OEB</h3><p>Les bandes OEB classifient le risque de manipulation d'une substance, déterminant le confinement et les EPI requis:</p>
+<table class="terms"><tr><th>Bande</th><th>Niveau</th><th>Contrôle typique</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>Faible</td><td>Manipulation générale</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>Faible-modéré</td><td>Extraction locale (le rapport AQL réel de ce projet est OEB 2)</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>Modéré</td><td>Contrôles techniques</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>Élevé</td><td>Installation dédiée</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>Très élevé</td><td>Confinement total</td></tr></table>
+<p style="font-size:11.5px;color:var(--text-dim);">Les seuils exacts varient selon l'entreprise — à titre indicatif seulement.</p>`,
+ar: `<h3 dir="rtl">GMP / cGMP</h3><p dir="rtl"><b>GMP</b> (ممارسات التصنيع الجيدة) هي القواعد التي تحكم إنتاج الأدوية. <b>cGMP</b> تعني أن هذه الممارسات يجب أن تعكس أحدث الأساليب والتقنيات.</p>
+<h3 dir="rtl">EHS</h3><p dir="rtl"><b>EHS</b> (البيئة والصحة والسلامة) يحمي العمال والبيئة من مخاطر التصنيع — التحكم بالتعرض، إدارة النفايات، منع الحوادث.</p>
+<h3 dir="rtl">فئة OEB</h3><p dir="rtl">تصنف نطاقات OEB مدى خطورة التعامل مع مادة ما، وتحدد متطلبات الاحتواء ومعدات الحماية:</p>
+<table class="terms" dir="rtl"><tr><th>النطاق</th><th>المستوى</th><th>الضوابط النموذجية</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>منخفض</td><td>تعامل عام</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>منخفض-متوسط</td><td>شفط موضعي (تقرير AQL الفعلي لهذا المشروع هو OEB 2)</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>متوسط</td><td>ضوابط هندسية</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>مرتفع</td><td>منشأة مخصصة</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>مرتفع جدًا</td><td>احتواء كامل</td></tr></table>
+<p dir="rtl" style="font-size:11.5px;color:var(--text-dim);">الحدود الدقيقة تختلف حسب الشركة — اعتبر هذا توضيحيًا وليس معيارًا عالميًا.</p>`,
+zh: `<h3>GMP / cGMP</h3><p><b>GMP</b>（良好生产规范）是规范制药生产的法规体系。<b>cGMP</b>（现行GMP）意味着这些规范必须反映当前最新的方法和技术。</p>
+<h3>EHS</h3><p><b>EHS</b>（环境、健康与安全）负责保护员工、公众和环境免受生产过程中的危害——暴露控制、废物处理、事故预防。</p>
+<h3>OEB 职业暴露分级</h3><p>OEB 分级用于划分物料处理的危险程度，决定所需的防护装备和密闭控制：</p>
+<table class="terms"><tr><th>等级</th><th>危险程度</th><th>典型控制措施</th></tr>
+<tr><td><span class="oeb-badge" style="background:#2E7D32">OEB 1</span></td><td>低</td><td>一般操作</td></tr>
+<tr><td><span class="oeb-badge" style="background:#1565C0">OEB 2</span></td><td>低-中</td><td>局部排风（本项目实际AQL报告为OEB 2）</td></tr>
+<tr><td><span class="oeb-badge" style="background:#F9A825">OEB 3</span></td><td>中等</td><td>工程控制</td></tr>
+<tr><td><span class="oeb-badge" style="background:#EF6C00">OEB 4</span></td><td>高</td><td>专用设施</td></tr>
+<tr><td><span class="oeb-badge" style="background:#B71C1C">OEB 5</span></td><td>极高</td><td>全隔离防护</td></tr></table>
+<p style="font-size:11.5px;color:var(--text-dim);">具体界限因公司而异——仅供参考，非通用标准。</p>`
+  };
+
+  var HELP_TOPICS = {
+hierarchy: {
+en:`<h3>What it does</h3><p>Breaks a batch order down through the pack hierarchy — caplets → BFUs → cartons → bundles → shippers.</p>
+<h3>GMP relevance</h3><p>Every batch must have a documented, traceable quantity breakdown before packaging starts; this calculation is the basis for the Batch Packaging Record (BPR) and for material issue. Getting the hierarchy right prevents under- or over-issuing components, a common root cause of packaging deviations.</p>`,
+bn:`<h3>এটা কী করে</h3><p>অর্ডারকৃত ব্যাচকে প্যাক হায়ারার্কি অনুযায়ী ভেঙে দেখায় — ক্যাপলেট → BFU → কার্টন → বান্ডেল → শিপার।</p>
+<h3>GMP প্রাসঙ্গিকতা</h3><p>প্যাকেজিং শুরুর আগে প্রতিটা ব্যাচের লিখিত, ট্রেসেবল পরিমাণ ভাঙন থাকা আবশ্যক — এটাই Batch Packaging Record (BPR) ও উপকরণ ইস্যুর ভিত্তি। সঠিক হায়ারার্কি কম/বেশি উপকরণ ইস্যু হওয়া রোধ করে, যা প্যাকেজিং ডেভিয়েশনের একটা সাধারণ কারণ।</p>`,
+es:`<h3>Qué hace</h3><p>Descompone un pedido de lote por la jerarquía de empaque — cápsulas → BFU → cajas → paquetes → envíos.</p><h3>Relevancia GMP</h3><p>Cada lote debe tener un desglose documentado antes de empacar; es la base del registro de empaque (BPR).</p>`,
+fr:`<h3>Fonction</h3><p>Décompose une commande de lot selon la hiérarchie d'emballage — comprimés → BFU → cartons → lots → expéditions.</p><h3>Pertinence BPF</h3><p>Chaque lot doit avoir une répartition documentée avant l'emballage; c'est la base du dossier de lot (BPR).</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يقسّم طلب الدفعة عبر التسلسل الهرمي للتعبئة — أقراص ← BFU ← كراتين ← حزم ← شحنات.</p><h3 dir="rtl">صلة GMP</h3><p dir="rtl">يجب أن يكون لكل دفعة تفصيل كمي موثق قبل بدء التعبئة؛ وهو أساس سجل التعبئة (BPR).</p>`,
+zh:`<h3>功能</h3><p>按包装层级分解批次订单——胶囊 → BFU → 纸盒 → 捆包 → 装运箱。</p><h3>GMP 相关性</h3><p>每批产品在包装开始前必须有书面、可追溯的数量分解——这是批包装记录（BPR）的基础。</p>`
+},
+material: {
+en:`<h3>What it does</h3><p>Calculates how much of each packaging component (foil, cartons, shippers) must be issued for the batch, including a standard overage allowance.</p>
+<h3>cGMP relevance</h3><p>Material issue must be based on a documented, approved Bill of Materials (BOM) with justified waste/overage factors — undocumented overage is a common audit finding. Accurate planning also reduces EHS impact by minimizing excess material handling and waste generation.</p>`,
+bn:`<h3>এটা কী করে</h3><p>প্রতিটা প্যাকেজিং উপকরণ (ফয়েল, কার্টন, শিপার) কতটা ইস্যু করতে হবে হিসাব করে, স্ট্যান্ডার্ড overage allowance সহ।</p>
+<h3>cGMP প্রাসঙ্গিকতা</h3><p>উপকরণ ইস্যু হতে হবে অনুমোদিত BOM অনুযায়ী, যুক্তিসঙ্গত ওভারেজ ফ্যাক্টর সহ — অনথিভুক্ত ওভারেজ একটা সাধারণ অডিট ফাইন্ডিং। সঠিক পরিকল্পনা অতিরিক্ত উপকরণ হ্যান্ডলিং ও বর্জ্য কমিয়ে EHS-এও সহায়ক।</p>`,
+es:`<h3>Qué hace</h3><p>Calcula cuánto de cada componente debe emitirse para el lote, incluyendo un margen de sobrante estándar.</p><h3>Relevancia cGMP</h3><p>La emisión de material debe basarse en una Lista de Materiales (BOM) aprobada con factores de sobrante justificados.</p>`,
+fr:`<h3>Fonction</h3><p>Calcule la quantité de chaque composant à émettre pour le lot, avec une marge de surplus standard.</p><h3>Pertinence cGMP</h3><p>L'émission de matériel doit reposer sur une nomenclature (BOM) approuvée avec des facteurs de surplus justifiés.</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يحسب كمية كل مكون تعبئة يجب صرفها للدفعة، متضمنًا هامش فائض قياسي.</p><h3 dir="rtl">صلة cGMP</h3><p dir="rtl">يجب أن يستند صرف المواد إلى قائمة مواد (BOM) معتمدة بعوامل فائض مبررة.</p>`,
+zh:`<h3>功能</h3><p>计算批次所需发放的各包装物料（箔材、纸盒、装运箱）数量，含标准溢耗系数。</p><h3>cGMP 相关性</h3><p>物料发放必须依据经批准的物料清单（BOM），并有合理的溢耗依据——未记录的溢耗是常见的审计发现项。</p>`
+},
+progress: {
+en:`<h3>What it does</h3><p>Tracks cumulative production against the batch target across shifts, showing what remains to finish.</p>
+<h3>GMP relevance</h3><p>Feeds real-time batch status for supervisors and QA, supporting GMP's requirement for contemporaneous production recording. Rejected-quantity tracking here also feeds EHS incident/waste metrics when rejects relate to equipment or material-handling issues.</p>`,
+bn:`<h3>এটা কী করে</h3><p>ব্যাচ টার্গেটের বিপরীতে শিফট অনুযায়ী মোট উৎপাদন ট্র্যাক করে, বাকি কতটুকু তা দেখায়।</p>
+<h3>GMP প্রাসঙ্গিকতা</h3><p>সুপারভাইজার ও QA-এর জন্য রিয়েল-টাইম ব্যাচ স্ট্যাটাস দেয়, GMP-এর contemporaneous রেকর্ডিং দাবি পূরণ করে। এখানকার বাতিল-পরিমাণ ট্র্যাকিং EHS ইনসিডেন্ট/বর্জ্য মেট্রিক্সেও যোগ হয়।</p>`,
+es:`<h3>Qué hace</h3><p>Rastrea la producción acumulada frente al objetivo del lote por turno, mostrando lo que falta.</p><h3>Relevancia GMP</h3><p>Alimenta el estado del lote en tiempo real, apoyando el registro contemporáneo exigido por GMP.</p>`,
+fr:`<h3>Fonction</h3><p>Suit la production cumulée par rapport à l'objectif du lot, poste par poste.</p><h3>Pertinence BPF</h3><p>Alimente le statut du lot en temps réel, conforme à l'exigence BPF d'enregistrement contemporain.</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يتتبع الإنتاج التراكمي مقابل هدف الدفعة عبر الورديات، ويُظهر المتبقي لإنهائها.</p><h3 dir="rtl">صلة GMP</h3><p dir="rtl">يوفر حالة الدفعة في الوقت الفعلي، دعمًا لمتطلب GMP بالتسجيل الآني.</p>`,
+zh:`<h3>功能</h3><p>按班次跟踪累计产量与批次目标的对比，显示剩余待完成数量。</p><h3>GMP 相关性</h3><p>为主管和QA提供实时批次状态，支持GMP对同步生产记录的要求。</p>`
+},
+lottype: {
+en:`<h3>What it does</h3><p>Classifies each shift entry as Startup, Running, or Finished.</p>
+<h3>GMP relevance</h3><p>Line-clearance and first-piece inspection requirements typically apply most rigorously at Startup; cGMP documentation expects the startup entry to be clearly distinguishable in the batch record from routine running production.</p>`,
+bn:`<h3>এটা কী করে</h3><p>প্রতিটা শিফট এন্ট্রিকে Startup, Running, বা Finished হিসেবে চিহ্নিত করে।</p>
+<h3>GMP প্রাসঙ্গিকতা</h3><p>Line clearance ও first-piece inspection সবচেয়ে কঠোরভাবে Startup-এ প্রযোজ্য; cGMP ডকুমেন্টেশন আশা করে ব্যাচ রেকর্ডে Startup এন্ট্রি নিয়মিত Running উৎপাদন থেকে স্পষ্টভাবে আলাদা থাকুক।</p>`,
+es:`<h3>Qué hace</h3><p>Clasifica cada entrada de turno como Inicio, En curso o Finalizado.</p><h3>Relevancia GMP</h3><p>Los requisitos de despeje de línea aplican con más rigor en el Inicio.</p>`,
+fr:`<h3>Fonction</h3><p>Classe chaque entrée de poste en Démarrage, En cours ou Terminé.</p><h3>Pertinence BPF</h3><p>Les exigences de dégagement de ligne s'appliquent le plus rigoureusement au Démarrage.</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يصنف كل إدخال وردية كبدء أو تشغيل أو انتهاء.</p><h3 dir="rtl">صلة GMP</h3><p dir="rtl">تُطبَّق متطلبات تخليص الخط بأقصى صرامة عند البدء.</p>`,
+zh:`<h3>功能</h3><p>将每个班次记录分类为“开始”“运行中”或“完成”。</p><h3>GMP 相关性</h3><p>产线清场和首件检验要求通常在“开始”阶段最为严格。</p>`
+},
+lotalloc: {
+en:`<h3>What it does</h3><p>Allocates a material requirement across multiple physical lots, applying Sealed vs Open-Partial/Exhaust priority.</p>
+<h3>GMP + EHS + OEB relevance</h3><p>Finishing partially-used (opened) lots before opening a new sealed one is a core GMP material-control principle, supporting FEFO/FIFO discipline. It's also an EHS consideration: fewer open bulk-material containers means lower exposure risk — which is why the material's OEB class matters. Higher-OEB (more potent) materials need stricter containment and fewer open-container events than low-hazard ones.</p>`,
+bn:`<h3>এটা কী করে</h3><p>একাধিক ভৌত লটের মধ্যে উপকরণ চাহিদা বিভাজন করে, Sealed বনাম Open-Partial/Exhaust অগ্রাধিকার প্রয়োগ করে।</p>
+<h3>GMP + EHS + OEB প্রাসঙ্গিকতা</h3><p>নতুন Sealed লট খোলার আগে আংশিক-ব্যবহৃত (খোলা) লট শেষ করা একটা মূল GMP উপকরণ-নিয়ন্ত্রণ নীতি, যা FEFO/FIFO শৃঙ্খলা সমর্থন করে। এটা EHS বিবেচনাও: কম খোলা বাল্ক-উপকরণ কন্টেইনার মানে কম exposure ঝুঁকি — তাই উপকরণের OEB ক্লাস এখানে গুরুত্বপূর্ণ।</p>`,
+es:`<h3>Qué hace</h3><p>Asigna un requisito de material entre varios lotes físicos, aplicando prioridad Sellado vs. Abierto-Parcial/Agotado.</p><h3>Relevancia GMP+EHS+OEB</h3><p>Terminar lotes abiertos antes de abrir uno sellado es un principio GMP clave; menos envases abiertos reduce el riesgo de exposición (clase OEB).</p>`,
+fr:`<h3>Fonction</h3><p>Répartit un besoin en matériel entre plusieurs lots physiques, selon la priorité Scellé vs Ouvert-Partiel/Épuisé.</p><h3>Pertinence BPF+EHS+OEB</h3><p>Terminer les lots ouverts avant d'en ouvrir un nouveau est un principe BPF clé; moins de contenants ouverts réduit le risque d'exposition (classe OEB).</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يوزع احتياج المواد عبر عدة دفعات فعلية، مطبقًا أولوية مغلق مقابل مفتوح جزئيًا/مستنفد.</p><h3 dir="rtl">صلة GMP+EHS+OEB</h3><p dir="rtl">إنهاء الدفعات المفتوحة قبل فتح دفعة مغلقة جديدة مبدأ أساسي في GMP؛ تقليل الحاويات المفتوحة يقلل مخاطر التعرض (فئة OEB).</p>`,
+zh:`<h3>功能</h3><p>按“已密封”与“部分打开/已用尽”优先级，将物料需求分配到多个实际批次。</p><h3>GMP+EHS+OEB 相关性</h3><p>在开启新密封批次前用完已开封批次是核心GMP物料管理原则；减少开封容器数量也降低暴露风险（对应OEB等级）。</p>`
+},
+recon: {
+en:`<h3>What it does</h3><p>Compares material issued against theoretical requirement, actual usage, and rejects, flagging variance against a site tolerance (default ±3%).</p>
+<h3>cGMP relevance</h3><p>Material reconciliation/balance is a core cGMP batch-release requirement — an unexplained variance outside tolerance must be investigated (deviation/CAPA) before release. This also supports EHS waste accounting, since "qty to return" shows how much material must go back to stores or be disposed of.</p>`,
+bn:`<h3>এটা কী করে</h3><p>ইস্যুকৃত উপকরণকে তাত্ত্বিক চাহিদা, প্রকৃত ব্যবহার ও বাতিলের সাথে তুলনা করে, সাইট সহনসীমার (ডিফল্ট ±৩%) বিপরীতে ভ্যারিয়েন্স চিহ্নিত করে।</p>
+<h3>cGMP প্রাসঙ্গিকতা</h3><p>মেটেরিয়াল রিকনসিলিয়েশন/ব্যালেন্স একটা মূল cGMP ব্যাচ-রিলিজ দাবি — সহনসীমার বাইরে অব্যাখ্যাত ভ্যারিয়েন্স রিলিজের আগে তদন্ত (ডেভিয়েশন/CAPA) করতে হবে। এটা EHS বর্জ্য হিসাবেও সহায়ক, কারণ "ফেরতযোগ্য পরিমাণ" দেখায় কতটা উপকরণ স্টোরে ফেরত বা নিষ্পত্তি করতে হবে।</p>`,
+es:`<h3>Qué hace</h3><p>Compara el material emitido con el requisito teórico, el uso real y los rechazos, señalando varianzas fuera de tolerancia (±3% por defecto).</p><h3>Relevancia cGMP</h3><p>La reconciliación de materiales es un requisito clave para la liberación del lote.</p>`,
+fr:`<h3>Fonction</h3><p>Compare le matériel émis au besoin théorique, à l'utilisation réelle et aux rejets, signalant les écarts hors tolérance (±3% par défaut).</p><h3>Pertinence cGMP</h3><p>La réconciliation des matières est une exigence clé pour la libération du lot.</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يقارن المواد المصروفة بالاحتياج النظري والاستخدام الفعلي والمرفوضات، ويحدد الانحراف عن السماحية (±3% افتراضيًا).</p><h3 dir="rtl">صلة cGMP</h3><p dir="rtl">تسوية المواد متطلب أساسي للإفراج عن الدفعة.</p>`,
+zh:`<h3>功能</h3><p>将已发放物料与理论需求、实际用量及不合格品进行比较，标记超出容差（默认±3%）的差异。</p><h3>cGMP 相关性</h3><p>物料平衡核对是批次放行的核心cGMP要求。</p>`
+},
+saved: {
+en:`<h3>What it does</h3><p>Persists everything above to a database so a batch's full history — materials, production log, lot allocations, and reconciliation — can be retrieved later.</p>
+<h3>Regulatory relevance</h3><p>Under 21 CFR Part 11 / EU Annex 11 principles, batch records must be retained, attributable, and retrievable for QA review, audit, or CAPA investigation; this module is the record-retention layer for that requirement.</p>`,
+bn:`<h3>এটা কী করে</h3><p>উপরের সবকিছু ডাটাবেসে সংরক্ষণ করে, যাতে একটা ব্যাচের সম্পূর্ণ ইতিহাস — উপকরণ, প্রোডাকশন লগ, লট অ্যালোকেশন, রিকনসিলিয়েশন — পরে আনা যায়।</p>
+<h3>রেগুলেটরি প্রাসঙ্গিকতা</h3><p>21 CFR Part 11 / EU Annex 11 নীতি অনুযায়ী, ব্যাচ রেকর্ড সংরক্ষিত, attributable ও retrievable হতে হবে QA রিভিউ, অডিট বা CAPA তদন্তের জন্য — এই মডিউল সেই রেকর্ড-রিটেনশন স্তর।</p>`,
+es:`<h3>Qué hace</h3><p>Guarda todo lo anterior en una base de datos para recuperar el historial completo del lote.</p><h3>Relevancia regulatoria</h3><p>Según 21 CFR Part 11 / Anexo 11 UE, los registros de lote deben conservarse y ser recuperables.</p>`,
+fr:`<h3>Fonction</h3><p>Enregistre tout ce qui précède dans une base de données pour retrouver l'historique complet du lot.</p><h3>Pertinence réglementaire</h3><p>Selon 21 CFR Part 11 / Annexe 11 UE, les dossiers de lot doivent être conservés et récupérables.</p>`,
+ar:`<h3 dir="rtl">الوظيفة</h3><p dir="rtl">يحفظ كل ما سبق في قاعدة بيانات لاسترجاع التاريخ الكامل للدفعة لاحقًا.</p><h3 dir="rtl">الصلة التنظيمية</h3><p dir="rtl">وفق مبادئ 21 CFR Part 11 / الملحق 11 الأوروبي، يجب حفظ سجلات الدفعات وإمكانية استرجاعها.</p>`,
+zh:`<h3>功能</h3><p>将以上所有内容保存到数据库，以便日后检索批次的完整历史记录。</p><h3>法规相关性</h3><p>根据21 CFR Part 11/欧盟附录11原则，批记录必须予以保留、可归因并可检索。</p>`
+}
+  };
+
+  var hcLang = localStorage.getItem("rbc.hcLang") || "en";
+  var hcTopic = "glossary";
+  function renderHelpCenterChrome(){
+    var langTabs = document.getElementById("hcLangTabs");
+    langTabs.innerHTML = HC_LANGS.map(function(l){
+      return '<button class="lang-tab" data-lang="'+l.id+'" aria-selected="'+(l.id===hcLang?"true":"false")+'">'+l.label+'</button>';
+    }).join("");
+    langTabs.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        hcLang = btn.getAttribute("data-lang");
+        localStorage.setItem("rbc.hcLang", hcLang);
+        renderHelpCenterChrome();
+        renderHelpCenterBody();
+      });
+    });
+    var topicNav = document.getElementById("hcTopicNav");
+    topicNav.innerHTML = HC_TOPICS.map(function(t){
+      var label = t.labels[hcLang] || t.labels.en;
+      return '<button data-topic="'+t.id+'" aria-selected="'+(t.id===hcTopic?"true":"false")+'">'+icon(t.ic)+' '+label+'</button>';
+    }).join("");
+    topicNav.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        hcTopic = btn.getAttribute("data-topic");
+        renderHelpCenterChrome();
+        renderHelpCenterBody();
+      });
+    });
+  }
+  function renderHelpCenterBody(){
+    var body = document.getElementById("hcBody");
+    var content = hcTopic === "glossary"
+      ? (GLOSSARY[hcLang] || GLOSSARY.en)
+      : ((HELP_TOPICS[hcTopic] && HELP_TOPICS[hcTopic][hcLang]) || (HELP_TOPICS[hcTopic] && HELP_TOPICS[hcTopic].en) || "");
+    body.innerHTML = content;
+    body.scrollTop = 0;
+  }
+  window.openHelpCenter = function(topic){
+    hcTopic = topic || "glossary";
+    renderHelpCenterChrome();
+    renderHelpCenterBody();
+    document.getElementById("helpCenterModal").classList.add("open");
+  };
+  window.closeHelpCenter = function(){ document.getElementById("helpCenterModal").classList.remove("open"); };
+  document.getElementById("helpCenterModal").addEventListener("click", function(e){ if(e.target===this) closeHelpCenter(); });
+
+  // ================= init =================
+  (function init(){
+    if(localStorage.getItem("rbc.user")){
+      showScreen("dashboard");
+    } else {
+      showScreen("login");
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>

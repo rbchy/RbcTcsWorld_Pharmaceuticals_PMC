@@ -1,4 +1,4 @@
-# RbcTcsWorld_Pharmaceuticals_ProductionManagementCalculator
+# RbcTcsWorld — Pharmaceutical Production Management Calculator
 
 ![Java](https://img.shields.io/badge/Java-17-orange?logo=java)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-brightgreen?logo=springboot)

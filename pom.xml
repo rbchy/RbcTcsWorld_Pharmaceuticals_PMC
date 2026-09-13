@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      Parent = spring-boot-starter-parent gives you:
+        - dependency version management (no need to pin spring-boot-starter-web's version)
+        - sensible default plugin config (compiler, surefire, spring-boot-maven-plugin)
+      Using the same version (3.3.4) as your ClinTrial-Connect project for consistency.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.sharp.batchcalc</groupId>
+    <artifactId>RbcTcsWorld_PharmaBatchLotCalc</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>RbcTcsWorld_PharmaBatchLotCalc</name>
+    <description>Pharmaceutical Packaging Batch/Lot Calculator - Spring Boot REST API</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <allure.version>2.29.0</allure.version>
+        <aspectj.version>1.9.22</aspectj.version>
+    </properties>
+
+    <!-- Allure BOM — pins every io.qameta.allure:* artifact to one consistent version -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-bom</artifactId>
+                <version>${allure.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- REST API (Controllers, Jackson JSON, embedded Tomcat) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Bean validation (@NotNull, @Min, etc. on request DTOs) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Persistence: JPA + MySQL driver, for the new independent batch-lot schema -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Swagger / OpenAPI docs + interactive "try it out" UI at /swagger-ui.html -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+
+        <!-- In-memory DB used ONLY for integration tests (see src/test/resources/application-test.properties)
+             so `mvn test` never needs a live MySQL server -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit 5 (already added earlier) + Spring test utilities (MockMvc, etc.) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Selenium WebDriver, for the UI/E2E layer (src/test/java/.../e2e).
+             These tests need a real browser + the app actually running
+             (mvn spring-boot:run or ./run.sh) — they do NOT run as part of
+             the fast `mvn test` unit/API suite. See e2e/README notes. -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>4.23.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Auto-downloads/matches the right chromedriver version at runtime,
+             so you don't have to manage the driver binary by hand. -->
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.9.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Allure reporting — attaches to JUnit 5 via a ServiceLoader-registered
+             extension (see src/test/resources/junit-platform.properties).
+             AspectJ weaver below is what makes @Step/@Description/@Attachment work;
+             without it you still get pass/fail/timing/stack-traces, just no nested steps. -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectj.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Lets you run:  mvn spring-boot:run  (starts the REST API on port 8081) -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!--
+              `mvn test` runs unit + API/MockMvc tests only (fast, H2, no browser needed).
+              Selenium E2E tests live under src/test/java/.../e2e and are excluded here
+              because they need a real browser AND the app actually running against
+              MySQL — run them explicitly, e.g.:
+                mvn test -Dtest=com.sharp.batchcalc.e2e.**
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/e2e/**</exclude>
+                    </excludes>
+                    <!-- AspectJ weaver makes Allure's @Step/@Description/@Attachment work.
+                         ${settings.localRepository} resolves to your local .m2 — the jar is
+                         already on the classpath via the test-scope dependency above, this
+                         just also loads it as a javaagent. -->
+                    <argLine>
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+                    </argLine>
+                    <systemPropertyVariables>
+                        <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <!--
+              Generates the HTML report from target/allure-results (produced by
+              the run above). Two ways to view it:
+                mvn io.qameta.allure:allure-maven:serve   - builds + opens in browser, one shot
+                mvn io.qameta.allure:allure-maven:report  - builds to target/site/allure-maven-plugin
+                                                             (open index.html yourself)
+              Needs the Allure commandline tool on PATH the first time it runs;
+              the plugin downloads it automatically if missing.
+            -->
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
+                <configuration>
+                    <reportVersion>${allure.version}</reportVersion>
+                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
+                </configuration>
+            </plugin>
+
+            <!--
+              Lets you run the plain console demo:
+                mvn compile exec:java -Dexec.mainClass=com.sharp.batchcalc.Main
+              (independent of Spring Boot - Main.java has no Spring annotations)
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <mainClass>com.sharp.batchcalc.Main</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
