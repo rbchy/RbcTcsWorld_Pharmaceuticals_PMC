@@ -2,6 +2,7 @@ package com.sharp.batchcalc.web.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.time.LocalDate;
 
@@ -10,7 +11,9 @@ public class ProductionEntryRequest {
     private LocalDate date;   // Jackson parses ISO "2026-07-09" automatically
     @NotBlank
     private String shift;
+    @PositiveOrZero
     private double cartonsProduced;
+    @PositiveOrZero
     private double cartonsRejected;
     private String remarks;
 

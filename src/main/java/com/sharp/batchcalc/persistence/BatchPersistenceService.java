@@ -260,7 +260,13 @@ public class BatchPersistenceService {
     @Transactional
     public void deleteProductionEntry(Long batchId, Long entryId) {
         BatchHeader header = getBatchOrThrow(batchId); // 404 if batch itself doesn't exist
-        productionRepo.deleteById(entryId);
+        // The entry must belong to THIS batch — otherwise one batch's URL could delete
+        // another batch's production record.
+        ProductionEntryEntity entry = productionRepo.findById(entryId)
+                .filter(e -> e.getBatchHeader() != null && batchId.equals(e.getBatchHeader().getId()))
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Production entry " + entryId + " not found in batch " + batchId));
+        productionRepo.delete(entry);
         // Keep in-memory association in sync too, in case this batch is read again
         // within the same transaction (see note on appendProduction/saveLotAllocation/
         // saveReconciliation above).

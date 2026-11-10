@@ -10,7 +10,9 @@ public class LotBalanceRequest {
     @NotNull
     private LotStatus status;   // "SEALED" | "OPEN_PARTIAL" | "EXHAUSTED"
     private int priority;
+    @jakarta.validation.constraints.PositiveOrZero
     private double openingBalance;
+    @jakarta.validation.constraints.PositiveOrZero
     private double nominalQty;
     private String remarks;
 

@@ -361,4 +361,70 @@ class BatchPersistenceControllerIntegrationTest {
     private static void assertEquals(long expected, long actual, String message) {
         org.junit.jupiter.api.Assertions.assertEquals(expected, actual, message);
     }
+
+    // ---------------------------------------------------------------
+    // Hardening — production entries belong to one batch; no negative quantities
+    // ---------------------------------------------------------------
+    private Long appendOneEntry(Long batchId) throws Exception {
+        String json = mockMvc.perform(post("/api/batch/records/{id}/production", batchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"date": "2026-07-09", "shift": "A", "cartonsProduced": 1000, "cartonsRejected": 5, "remarks": ""}]
+                    """))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        return Long.valueOf(json.replaceAll("(?s).*?\"id\"\\s*:\\s*(\\d+).*", "$1"));
+    }
+
+    @Feature("Delete Production Entry")
+    @Severity(SeverityLevel.CRITICAL)
+    @Test
+    void deleteProductionEntry_ofAnotherBatch_returns404AndKeepsTheEntry() throws Exception {
+        Long batchA = createBatchAndGetId();
+        Long batchB = createBatchAndGetId();
+        Long entryOfA = appendOneEntry(batchA);
+
+        // batch B's URL must not be able to delete batch A's record
+        mockMvc.perform(delete("/api/batch/records/{id}/production/{entryId}", batchB, entryOfA))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("not found in batch")));
+        mockMvc.perform(get("/api/batch/records/{id}", batchA))
+            .andExpect(jsonPath("$.productionLog.length()").value(1));
+
+        // through its own batch it can be deleted
+        mockMvc.perform(delete("/api/batch/records/{id}/production/{entryId}", batchA, entryOfA))
+            .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/batch/records/{id}", batchA))
+            .andExpect(jsonPath("$.productionLog.length()").value(0));
+    }
+
+    @Feature("Append Production")
+    @Severity(SeverityLevel.CRITICAL)
+    @Test
+    void appendProduction_negativeCartons_returns400AndSavesNothing() throws Exception {
+        Long id = createBatchAndGetId();
+        mockMvc.perform(post("/api/batch/records/{id}/production", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    [{"date": "2026-07-09", "shift": "A", "cartonsProduced": -500, "cartonsRejected": 0, "remarks": ""}]
+                    """))
+            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/batch/records/{id}", id))
+            .andExpect(jsonPath("$.productionLog.length()").value(0));
+    }
+
+    @Feature("Reconciliation")
+    @Severity(SeverityLevel.CRITICAL)
+    @Test
+    void saveReconciliation_negativeRejectedQty_returns400() throws Exception {
+        Long id = createBatchAndGetId();
+        mockMvc.perform(post("/api/batch/records/{id}/reconciliation", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"actualCartonsProduced": 1000,
+                     "qtyIssuedByItem": {"106944": 30.0}, "qtyUsedByItem": {"106944": 28.0},
+                     "qtyRejectedByItem": {"106944": -10.0}}
+                    """))
+            .andExpect(status().isBadRequest());
+    }
 }

@@ -3,6 +3,7 @@ package com.sharp.batchcalc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Core batch/lot calculator for pharmaceutical packaging operations.
@@ -17,14 +18,22 @@ public class BatchLotCalculator {
     private final List<MaterialRequirement> materials;
 
     public BatchLotCalculator(BatchConfig config, List<MaterialRequirement> materials) {
-        this.config = config;
-        this.materials = materials;
+        this.config = Objects.requireNonNull(config, "config is required");
+        this.materials = Objects.requireNonNull(materials, "materials are required");
     }
 
     // ------------------------------------------------------------------
     // 1) START A BATCH — full hierarchy for the ordered quantity
     // ------------------------------------------------------------------
+    private static void requireNonNegative(double value, String name) {
+        if (value < 0 || Double.isNaN(value)) {
+            throw new IllegalArgumentException(name + " cannot be negative (" + value + ")"
+                    + " — " + name + " ঋণাত্মক হতে পারে না");
+        }
+    }
+
     public BatchHierarchy computeHierarchy(double cartonsOrdered) {
+        requireNonNegative(cartonsOrdered, "cartonsOrdered");
         double bfus = cartonsOrdered * config.getBfuPerCarton();
         double caplets = bfus * config.getCapletsPerBfu();
         double bundles = cartonsOrdered / config.getCartonPerBundle();
@@ -33,6 +42,8 @@ public class BatchLotCalculator {
     }
 
     public List<MaterialLineResult> computeMaterialRequirement(double cartonsOrdered) {
+        requireNonNegative(cartonsOrdered, "cartonsOrdered");
+        requireNonNegative(config.getOveragePct(), "overagePct");
         List<MaterialLineResult> results = new ArrayList<>();
         for (MaterialRequirement m : materials) {
             double base = m.baseRequiredFor(cartonsOrdered);
@@ -93,6 +104,15 @@ public class BatchLotCalculator {
             Map<String, Double> qtyUsedByItem,
             Map<String, Double> qtyRejectedByItem,
             double tolerance) {
+
+        requireNonNegative(actualCartonsProduced, "actualCartonsProduced");
+        requireNonNegative(tolerance, "tolerance");
+        for (Map<String, Double> quantities : java.util.Arrays.asList(qtyIssuedByItem, qtyUsedByItem, qtyRejectedByItem)) {
+            if (quantities == null) continue;
+            quantities.forEach((item, qty) -> {
+                if (qty != null) requireNonNegative(qty, "quantity for item " + item);
+            });
+        }
 
         List<ReconciliationLine> lines = new ArrayList<>();
         for (MaterialRequirement m : materials) {

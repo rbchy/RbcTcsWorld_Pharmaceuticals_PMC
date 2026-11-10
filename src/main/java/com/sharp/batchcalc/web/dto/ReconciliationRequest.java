@@ -18,11 +18,12 @@ public class ReconciliationRequest {
     private double actualCartonsProduced;
 
     /** Keyed by item number, e.g. {"106944": 1833.08} */
-    private Map<String, Double> qtyIssuedByItem;
-    private Map<String, Double> qtyUsedByItem;
-    private Map<String, Double> qtyRejectedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyIssuedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyUsedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyRejectedByItem;
 
     /** Optional — defaults to BatchLotCalculator.DEFAULT_TOLERANCE (0.03) if omitted */
+    @jakarta.validation.constraints.PositiveOrZero
     private Double tolerance;
 
     public BatchConfigRequest getConfig() { return config; }

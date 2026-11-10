@@ -270,17 +270,11 @@ public class BatchLotCalculatorTest {
     @Feature("Hierarchy")
     @Severity(SeverityLevel.MINOR)
     @Test
-    void tc_unit_003_hierarchyNegativeCartons_documentsCurrentBehavior() {
-        // No input validation exists today — negative cartons flow straight through
-        // the arithmetic rather than being rejected. This test documents that
-        // current (arguably undesirable) behavior so a future fix is a deliberate,
-        // visible change to this test rather than a silent one.
+    void tc_unit_003_hierarchyNegativeCartons_isRejected() {
+        // Hardened: negative cartons used to flow through the arithmetic (-2 shippers).
         BatchLotCalculator calc = new BatchLotCalculator(sampleConfig(), sampleMaterials());
-        BatchHierarchy h = calc.computeHierarchy(-100);
-
-        assertEquals(-400.0, h.bfus, 0.0001);
-        assertEquals(-2400.0, h.caplets, 0.0001);
-        assertEquals(-2L, h.shippers, "No exception thrown for negative input — flagged as a hardening candidate");
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> calc.computeHierarchy(-100));
+        assertTrue(e.getMessage().contains("cartonsOrdered cannot be negative"), e.getMessage());
     }
 
     @Feature("Hierarchy")
@@ -311,18 +305,17 @@ public class BatchLotCalculatorTest {
     @Feature("Material Requirement")
     @Severity(SeverityLevel.MINOR)
     @Test
-    void tc_unit_007_materialRequirementNegativeOveragePct_documentsCurrentBehavior() {
+    void tc_unit_007_materialRequirementNegativeOveragePct_isRejected() {
+        // Hardened: a -5 % "overage" used to issue LESS material than the base requirement.
         BatchConfig negativeOverageConfig = new BatchConfig("WO", "ITEM", "desc", "LOT", "CUST",
-                6, 4, 6, 6, -0.05); // -5% "overage" — no validation prevents this today
+                6, 4, 6, 6, -0.05);
         List<MaterialRequirement> materials = List.of(
                 new MaterialRequirement("X1", "Test material", "EA", 100.0));
         BatchLotCalculator calc = new BatchLotCalculator(negativeOverageConfig, materials);
 
-        BatchLotCalculator.MaterialLineResult r = calc.computeMaterialRequirement(1000).get(0);
-
-        assertEquals(100.0, r.baseRequired, 0.001);
-        assertEquals(-5.0, r.overageQty, 0.001, "Negative overagePct produces negative overageQty");
-        assertEquals(95.0, r.totalToIssue, 0.001, "totalToIssue ends up LOWER than base — flagged as a hardening candidate");
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> calc.computeMaterialRequirement(1000));
+        assertTrue(e.getMessage().contains("overagePct cannot be negative"), e.getMessage());
     }
 
     // ---------------------------------------------------------------
@@ -487,7 +480,7 @@ public class BatchLotCalculatorTest {
     @Feature("Reconciliation")
     @Severity(SeverityLevel.MINOR)
     @Test
-    void tc_unit_026_reconciliationNegativeRejected_flowsThroughArithmetic() {
+    void tc_unit_026_reconciliationNegativeRejected_isRejected() {
         List<MaterialRequirement> materials = List.of(
                 new MaterialRequirement("X1", "Test material", "EA", 100.0));
         BatchConfig zeroOverage = new BatchConfig("WO", "ITEM", "desc", "LOT", "CUST", 6, 4, 6, 6, 0.0);
@@ -495,11 +488,11 @@ public class BatchLotCalculatorTest {
 
         Map<String, Double> issued = Map.of("X1", 100.0);
         Map<String, Double> used = Map.of("X1", 50.0);
-        Map<String, Double> rejected = Map.of("X1", -10.0); // negative — no validation prevents this
-        ReconciliationLine line = calc.computeReconciliation(1000, issued, used, rejected, 0.03).get(0);
-
-        assertEquals(60.0, line.qtyToReturn, 0.0001,
-                "qtyToReturn = issued - used - rejected; a negative reject INCREASES the return figure (100-50-(-10)=60)");
+        Map<String, Double> rejected = Map.of("X1", -10.0);
+        // Hardened: a negative reject used to INCREASE the return-to-store figure (100-50-(-10)=60).
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> calc.computeReconciliation(1000, issued, used, rejected, 0.03));
+        assertTrue(e.getMessage().contains("X1"), "The message names the item: " + e.getMessage());
     }
 
     // ---------------------------------------------------------------
@@ -508,11 +501,10 @@ public class BatchLotCalculatorTest {
     @Feature("Constructor / Input Validation")
     @Severity(SeverityLevel.MINOR)
     @Test
-    void tc_unit_027_nullConfig_failsLateNotAtConstruction() {
-        // The constructor performs no null-check, so construction itself succeeds;
-        // the failure surfaces only on first use (fail-late, not fail-fast).
-        BatchLotCalculator calc = new BatchLotCalculator(null, sampleMaterials());
-        assertThrows(NullPointerException.class, () -> calc.computeHierarchy(1000),
-                "Null config throws NPE on first method call, not at construction — consider a fail-fast constructor check");
+    void tc_unit_027_nullConfig_failsFastAtConstruction() {
+        // Hardened: the constructor now checks its arguments, so the error points at the cause.
+        NullPointerException e = assertThrows(NullPointerException.class,
+                () -> new BatchLotCalculator(null, sampleMaterials()));
+        assertEquals("config is required", e.getMessage());
     }
 }

@@ -1,6 +1,8 @@
 package com.sharp.batchcalc.web.dto;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -29,7 +31,8 @@ public class BatchConfigRequest {
     @Min(1)
     private int bundlePerShipper;
 
-    @NotNull
+    /** Standard overage as a fraction (0.04 = 4 %). Negative overage would issue LESS than the base need. */
+    @NotNull @PositiveOrZero @DecimalMax("1.0")
     private Double overagePct;
 
     public String getWorkOrderNo() { return workOrderNo; }

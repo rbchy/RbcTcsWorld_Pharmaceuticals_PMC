@@ -1,0 +1,108 @@
+# Batch/Lot Calculator — CI
+#  1. unit + API tests (JUnit 5, MockMvc, H2 in memory) + Allure report
+#  2. Selenium E2E: the app runs against a MySQL 8 service, headless Chrome drives the UI
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-api:
+    name: Unit + API tests (H2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B -ntp clean verify
+
+      - name: Build the Allure report
+        if: always()
+        run: mvn -B -ntp io.qameta.allure:allure-maven:report
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-and-surefire
+          path: |
+            target/site/allure-maven-plugin/
+            target/surefire-reports/
+
+  e2e:
+    name: Selenium E2E (MySQL + headless Chrome)
+    runs-on: ubuntu-latest
+    needs: unit-and-api
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root
+          MYSQL_DATABASE: batch_lot_calc
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-root"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_NAME: batch_lot_calc
+      DB_USER: root
+      DB_PASSWORD: ci-root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - uses: browser-actions/setup-chrome@v1
+
+      - name: Build the app
+        run: mvn -B -ntp -DskipTests package
+
+      - name: Start the app on :8081
+        run: |
+          nohup java -jar target/RbcTcsWorld_PharmaBatchLotCalc-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8081/v3/api-docs > /dev/null; then echo "App is up"; exit 0; fi
+            sleep 2
+          done
+          echo "App did not start"; cat app.log; exit 1
+
+      - name: Persisted API smoke against MySQL
+        run: |
+          set -e
+          id=$(curl -sf -H 'Content-Type: application/json' -d '{"config":{"workOrderNo":"CI-1","itemNumber":"ITEM","capletsPerBfu":6,"bfuPerCarton":4,"cartonPerBundle":6,"bundlePerShipper":6,"overagePct":0.04},"cartonsOrdered":1000,"materials":[{"itemNumber":"X1","description":"Foil","unitOfMeasure":"lb","baseQtyPer1000Cartons":28}]}' \
+               http://localhost:8081/api/batch/records | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+          echo "Created batch $id in MySQL"
+          curl -sf http://localhost:8081/api/batch/records/$id | python3 -c 'import sys,json; d=json.load(sys.stdin); assert d["materials"][0]["itemNumber"]=="X1", d; print("Read back OK")'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:8081/api/batch/records/$id)" = 204
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8081/api/batch/records/$id)" = 404
+          echo "Create → read → delete round trip on MySQL OK"
+
+      - name: Run Selenium E2E tests
+        run: mvn -B -ntp test -Dtest='com.sharp.batchcalc.e2e.**' -Dsurefire.failIfNoSpecifiedTests=false -De2e.baseUrl=http://localhost:8081
+
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            target/surefire-reports/
+            target/allure-results/
+            app.log

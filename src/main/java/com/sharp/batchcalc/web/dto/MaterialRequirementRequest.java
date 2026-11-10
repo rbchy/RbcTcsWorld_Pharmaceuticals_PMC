@@ -7,6 +7,7 @@ public class MaterialRequirementRequest {
     private String itemNumber;
     private String description;
     private String unitOfMeasure;
+    @jakarta.validation.constraints.PositiveOrZero
     private double baseQtyPer1000Cartons;
 
     public String getItemNumber() { return itemNumber; }

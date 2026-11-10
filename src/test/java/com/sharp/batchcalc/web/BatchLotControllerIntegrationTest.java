@@ -459,4 +459,36 @@ class BatchLotControllerIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.bfus").value(400000000.0));
     }
+
+    // ---------------------------------------------------------------
+    // Hardening — negative overage / cartons are refused
+    // ---------------------------------------------------------------
+    @Feature("Material Requirement")
+    @Severity(SeverityLevel.CRITICAL)
+    @Test
+    void negativeOveragePct_returns400() throws Exception {
+        String body = """
+            { "config": { "workOrderNo":"WO","itemNumber":"I","capletsPerBfu":6,"bfuPerCarton":4,
+              "cartonPerBundle":6,"bundlePerShipper":6,"overagePct":-0.05 },
+              "cartonsOrdered": 1000,
+              "materials": [{"itemNumber":"X1","description":"d","unitOfMeasure":"EA","baseQtyPer1000Cartons":100}] }
+            """;
+        mockMvc.perform(post("/api/batch/material-requirement").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("overagePct")));
+    }
+
+    @Feature("Progress")
+    @Severity(SeverityLevel.CRITICAL)
+    @Test
+    void negativeCartonsInProductionLog_returns400() throws Exception {
+        String body = """
+            { "config": { "workOrderNo":"WO","itemNumber":"I","capletsPerBfu":6,"bfuPerCarton":4,
+              "cartonPerBundle":6,"bundlePerShipper":6,"overagePct":0.04 },
+              "targetCartons": 1000,
+              "log": [{"date":"2026-07-09","shift":"A","cartonsProduced":-100,"cartonsRejected":0}] }
+            """;
+        mockMvc.perform(post("/api/batch/progress").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isBadRequest());
+    }
 }

@@ -8,9 +8,11 @@ import java.util.Map;
 public class PersistReconciliationRequest {
     @PositiveOrZero
     private double actualCartonsProduced;
-    private Map<String, Double> qtyIssuedByItem;
-    private Map<String, Double> qtyUsedByItem;
-    private Map<String, Double> qtyRejectedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyIssuedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyUsedByItem;
+    private Map<String, @jakarta.validation.constraints.PositiveOrZero Double> qtyRejectedByItem;
+    @jakarta.validation.constraints.PositiveOrZero
+    @jakarta.validation.constraints.PositiveOrZero
     private Double tolerance; // optional, defaults to BatchLotCalculator.DEFAULT_TOLERANCE
 
     public double getActualCartonsProduced() { return actualCartonsProduced; }

@@ -24,6 +24,22 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorBody(ex.getMessage()));
     }
 
+    /** Invalid input caught by the calculation engine itself (e.g. a negative quantity). */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleBadInput(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(ex.getMessage()));
+    }
+
+    /** Bean-validation failures on list elements, e.g. one bad entry in a production log. */
+    @ExceptionHandler(org.springframework.web.method.annotation.HandlerMethodValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodValidation(
+            org.springframework.web.method.annotation.HandlerMethodValidationException ex) {
+        StringBuilder msg = new StringBuilder("Validation failed: ");
+        ex.getAllValidationResults().forEach(r -> r.getResolvableErrors().forEach(e ->
+                msg.append(e.getDefaultMessage()).append("; ")));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(msg.toString()));
+    }
+
     /** Thrown when a batch id in the URL path doesn't exist. */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(EntityNotFoundException ex) {
