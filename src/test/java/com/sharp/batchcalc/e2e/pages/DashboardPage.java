@@ -30,7 +30,9 @@ public class DashboardPage extends BasePage {
     public void openToolByName(String toolNameEn) {
         for (WebElement tile : tileList()) {
             WebElement enSpan = tile.findElement(By.cssSelector(".tile-title .en"));
-            if (enSpan.getText().trim().equalsIgnoreCase(toolNameEn)) {
+            // textContent, not getText(): the English span is hidden (display:none)
+            // while the UI is in Bangla, and getText() returns "" for hidden elements.
+            if (enSpan.getAttribute("textContent").trim().equalsIgnoreCase(toolNameEn)) {
                 tile.click();
                 return;
             }
