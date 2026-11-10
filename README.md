@@ -1,241 +1,290 @@
-# RbcTcsWorld — Pharmaceutical Production Management Calculator
+<div align="center">
 
-![Java](https://img.shields.io/badge/Java-17-orange?logo=java)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-brightgreen?logo=springboot)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
-![Maven](https://img.shields.io/badge/Build-Maven-blue?logo=apachemaven)
-![Swagger](https://img.shields.io/badge/API_Docs-OpenAPI-85EA2D?logo=swagger)
-![Tests](https://img.shields.io/badge/Tests-74_automated-success)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+# 🧮 RbcTcsWorld Pharmaceutical Production Management Calculator
 
-**Author:** Ranajit Baran Chowdhury — QA Automation Engineer / SDET
-**Email:** chyranajit@gmail.com
-**GitHub:** [@rbchy](https://github.com/rbchy)
+### Batch / lot calculator for pharmaceutical packaging lines — Spring Boot REST API, MySQL batch records, bilingual browser UI, tested from unit to Selenium
 
-A REST-API-first batch/lot calculator for pharmaceutical packaging lines,
-built around one real, uploaded Sharp Packaging Solutions work order
-(S180406-1 — Imodium MSR 24ct caplets, Kenvue Brands). It covers the full
-pack-hierarchy breakdown, material requirement planning, partial-production
-progress, **Sealed-vs-Exhaust lot allocation**, three-shift
-**Startup/Running/Finished** classification, and material reconciliation —
-exposed as a documented REST API, a persisted MySQL-backed record store, a
-desktop-style bilingual browser UI, and backed by a 74-test automated suite
-with Allure reporting.
+[![Typing SVG](https://readme-typing-svg.demolab.com/?font=Fira+Code&size=18&pause=1500&color=FFC107&center=true&vCenter=true&width=900&repeat=true&lines=Java+17+%C2%B7+Spring+Boot+3.3+%C2%B7+MySQL+8+%C2%B7+OpenAPI;Hierarchy+%C2%B7+Materials+%C2%B7+Progress+%C2%B7+Sealed+vs+Exhaust+%C2%B7+Reconciliation;81+%2F+81+tests+green+%C2%B7+unit+%2B+API+%2B+Selenium+in+CI)](https://git.io/typing-svg)
+
+<!-- ============ STATUS BAR ============ -->
+[![CI](https://github.com/rbchy/RbcTcsWorld_Pharmaceuticals_PMC/actions/workflows/ci.yml/badge.svg)](https://github.com/rbchy/RbcTcsWorld_Pharmaceuticals_PMC/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/Tests-81%20%2F%2081%20passed-22c55e?style=for-the-badge&logo=checkmarx&logoColor=white)
+![Domain](https://img.shields.io/badge/Domain-Pharma%20Packaging%20%C2%B7%20GMP-155e75?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=for-the-badge)
+
+![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
+![JUnit 5](https://img.shields.io/badge/JUnit%205-MockMvc-25A162?style=for-the-badge&logo=junit5&logoColor=white)
+![Selenium](https://img.shields.io/badge/Selenium-4.23-43B02A?style=for-the-badge&logo=selenium&logoColor=white)
+![Allure](https://img.shields.io/badge/Allure-2.29-FF6C37?style=for-the-badge)
+
+![Last Commit](https://img.shields.io/github/last-commit/rbchy/RbcTcsWorld_Pharmaceuticals_PMC?style=flat-square&color=0d9488&label=Last%20commit)
+![Repo Size](https://img.shields.io/github/repo-size/rbchy/RbcTcsWorld_Pharmaceuticals_PMC?style=flat-square&color=155e75&label=Repo%20size)
+
+</div>
 
 ---
 
-## 📋 Quick Overview
+## 📌 At a Glance
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**🙋 What this is**
+
+A REST-API-first calculator for the numbers a blister-packaging line lead works out on every batch:
+
+- **pack hierarchy:** caplets → BFUs → cartons → bundles → shippers
+- **material requirement** with standard overage
+- **partial-production progress** across shifts, with each shift classed as **Startup / Running / Finished**
+- **Sealed vs Exhaust lot allocation:** open lots are used up before a new sealed lot is touched
+- **material reconciliation** within a tolerance
+
+It is modelled on a real packaging work order. Batch records can be saved to MySQL. The whole thing is usable from a bilingual (English / বাংলা) browser UI, with a 6-language Help Center and a GMP / cGMP / EHS / OEB glossary.
+
+Every push runs the **unit, API and Selenium E2E** tests in GitHub Actions. The E2E tests run against the app on a real MySQL database.
+
+</td>
+<td width="50%" valign="top">
+
+**📍 Quick facts**
 
 | | |
 |---|---|
-| **Backend** | Spring Boot 3.3, Java 17, Spring Data JPA |
-| **Database** | MySQL 8.0 (production), H2 in-memory (CI/test) |
-| **Frontend** | Single-page bilingual HTML/CSS/vanilla JS, served as a Spring Boot static resource — no build step |
-| **API Docs** | springdoc-openapi (Swagger UI at `/swagger-ui.html`) |
-| **Auth** | Demo-only (browser localStorage) — see [Known Gaps](#known-gaps--honesty-notes) |
-| **Testing** | JUnit 5 (unit + MockMvc/API), Selenium 4 (E2E), Allure reporting |
-| **Build** | Maven (`pom.xml`), runs as a standard Spring Boot jar |
+| 🧩 **API** | 6 calculator + 8 batch-record endpoints |
+| 🧪 **Tests** | 27 unit · 42 API (MockMvc) · 12 Selenium E2E |
+| ✅ **CI** | 81 / 81 + MySQL round trip · ≈ 2.5 min |
+| 💾 **Database** | MySQL 8, 5 tables · H2 for tests |
+| 📖 **Docs** | Swagger UI at `/swagger-ui.html` |
+| 📊 **Reports** | Allure (by layer and severity) · Surefire |
+| 🗂️ **Test design** | ~150-case matrix in `RbcTcsWorld_Test_Cases.xlsx` |
+
+</td>
+</tr>
+</table>
 
 ---
 
-## ✨ Key Features
+## ✅ Latest Results
 
-### 🧮 Batch/Lot Calculator Engine
-- Pack-hierarchy breakdown: caplets → BFUs → cartons → bundles → shippers
-- Material requirement (base + standard overage) per component
-- Partial-production progress tracking across shifts
-- Three-shift lifecycle classification: **Startup → Running → Finished**
+| Layer | Tests | What is asserted | Result |
+|---|---:|---|---|
+| 🧩 Unit (`BatchLotCalculatorTest`) | 27 | Hierarchy math and whole shippers · overage · progress capped at 100 % · Sealed vs Exhaust order and shortfall · Startup / Running / Finished · tolerance boundary is inclusive · **negative inputs refused** | ![passed](https://img.shields.io/badge/-27%20passed-22c55e?style=flat-square) |
+| 🌐 Stateless API (`/api/batch/*`) | 26 | Every calculator endpoint, positive and negative · 400 on invalid input · 405 / 404 on a wrong method or path · script tags treated as plain text · very large numbers do not overflow | ![passed](https://img.shields.io/badge/-26%20passed-22c55e?style=flat-square) |
+| 💾 Persisted API (`/api/batch/records/*`) | 16 | Full life cycle: create → production → lot allocation → reconciliation → read → delete · unknown batch → 404 · **an entry of another batch cannot be deleted** · negative quantities → 400 | ![passed](https://img.shields.io/badge/-16%20passed-22c55e?style=flat-square) |
+| 🖥️ Selenium E2E (headless Chrome) | 12 | Login / register and their validation · 7 dashboard tiles · Hierarchy add / edit / reset / display · language persists across reload · Arabic Help Center is right-to-left | ![passed](https://img.shields.io/badge/-12%20passed-22c55e?style=flat-square) |
+| 🐬 MySQL round trip (CI) | — | Create → read → delete a batch record on MySQL 8 | ![passed](https://img.shields.io/badge/-passed-22c55e?style=flat-square) |
+| **Total** | **81** | | **100 %** |
 
-### 🔒 Sealed vs. Exhaust Lot Allocation
-- Drains Open-Partial/Exhaust lots first (by priority) before touching a new
-  Sealed lot — the real GMP material-control rule seen on the source work
-  order (`Must use bulk lot# ...(Exhaust)`)
-- Shortfall detection with a clear bilingual error, not a raw stack trace
-
-### ⚖️ Material Reconciliation
-- Used / rejected / return-to-store per material, flagged against a
-  configurable tolerance (default ±3%)
-
-### 💾 Persisted Batch Records (new, independent MySQL schema)
-- 5 tables (`batch_header`, `material_requirement`, `production_entry`,
-  `lot_balance`, `reconciliation_record`) — a from-scratch schema, not tied
-  to any other project's database
-- Full CRUD: create → append production → save lot allocation → save
-  reconciliation → fetch full detail → delete
-
-### 📖 Interactive API Docs
-- Every endpoint documented and "try-it-out"-able at `/swagger-ui.html`
-  (springdoc-openapi, no separate Postman collection needed)
-
-### 🖥️ Desktop-Style Browser UI
-- Login → Register → Dashboard → tool forms flow, RbcTcsWorld watermark,
-  icon-tile navigation
-- Every form: centered card layout with **Add / Edit / Update / Delete /
-  Display / Search / Back** action buttons
-- English/বাংলা toggle across the entire UI
-
-### 🌐 6-Language Help Center + GMP/cGMP/EHS/OEB Glossary
-- English, বাংলা, Español, Français, العربية, 中文
-- A dedicated glossary explains **GMP, cGMP, EHS, and OEB exposure bands**
-  (1–5), and every tool panel's help topic ties back to which of those
-  concepts it touches — e.g. Lot Allocation explains why OEB class matters
-  when deciding how many open bulk-material containers are in play at once
-
-### ✅ Automated Test Suite (74 tests) + Allure Reporting
-- 27 unit tests, 24 stateless-API tests, ~13 persisted-API tests, ~10
-  Selenium E2E tests — positive, negative, boundary, and security cases
-- Full test-case design matrix (~150 planned cases) in
-  `RbcTcsWorld_Test_Cases.xlsx`
-- Allure report organized by layer (`@Epic`) and severity (`@Severity`),
-  matching the matrix's priority ratings
+<sub>GitHub Actions: job 1 runs unit + API tests on H2 and builds the Allure report; job 2 starts the app on a MySQL 8 service and runs the Selenium suite in headless Chrome ([workflow](.github/workflows/ci.yml)).</sub>
 
 ---
 
-## 🔄 How This Compares to PPES
+## 🏗️ Architecture
 
-[**PPES — Pharmaceutical Packaging Management System**](https://github.com/rbchy/PPES-Pharmaceutical-Packaging-Management)
-is this author's other pharma packaging project: a full **Java Swing desktop
-+ PHP/Bootstrap web** system, sharing one MySQL database directly, covering
-18 tables of masters and production data end-to-end (product/customer
-masters, raw material receiving, IPC inspection, pallets, shift handover,
-and more) with real salted-SHA-256 authentication and 6 pre-built Excel
-reports. Both projects share DNA — PPES even has its own
-`batch_yield_reconciliation_calculator.html` and the same bilingual
-GMP/cGMP/OEB1–5 glossary approach — but they solve different problems:
-
-| | **PPES** | **This project (RbcTcsWorld)** |
-|---|---|---|
-| **Scope** | Whole packaging-line ERP: 18 tables, order intake through dispatch & waste | One focused capability: batch/lot math + Sealed/Exhaust allocation + reconciliation |
-| **Architecture** | Two separate apps (Swing + PHP) talking to MySQL **directly** | One Spring Boot app; browser UI talks to a **REST API**, not the DB directly |
-| **API layer** | None — each app embeds its own DB access (JDBC / PDO) | Full REST API, documented with Swagger/OpenAPI, usable by any client |
-| **Frontend** | Java Swing desktop GUI *and* a separate PHP/Bootstrap web app | One bilingual (6-language Help Center) single-page browser UI |
-| **Auth** | Real: salted SHA-256, shared `users` table, works identically in both apps | **Demo only** (localStorage) — a known, documented gap here |
-| **Data layer** | 18-table metadata-driven generic CRUD engine (`TableRegistry` / `tables.php`) | 5-table purpose-built schema for batch/lot/material/lot-balance/reconciliation |
-| **Lot allocation** | Not modeled | **Sealed vs. Exhaust** priority-cascade allocation, with shortfall detection |
-| **Shift classification** | Shift Production Log (entries only) | Explicit **Startup/Running/Finished** lifecycle classification per entry |
-| **Reports** | 6 pre-built Excel reports (Apache POI) | None yet — JSON API + on-screen tables only |
-| **Excel import/export** | Yes (Apache POI, desktop app) | No |
-| **Automated tests** | Not present in the repo | **74 automated tests** (JUnit 5, MockMvc, Selenium) + Allure reporting |
-| **Bilingual help** | Bangla/English | English/বাংলা for the UI; **6 languages** (adding Español/Français/العربية/中文) for the Help Center specifically |
-| **License** | MIT | MIT |
-
-**In short:** PPES is the broader, production-shaped system (and the one
-with real auth and reporting); this project is the deeper, single-capability
-one — REST-first, more rigorously tested, and the one that took the
-Sealed/Exhaust and Startup/Running/Finished modeling further. Porting this
-project's lot-allocation and reconciliation engine into PPES's 18-table
-schema — or porting PPES's real authentication and Excel reporting back into
-this project — are both natural next steps if the two are ever meant to
-converge.
-
----
-
-## 📂 Repository Structure
-
+```mermaid
+flowchart LR
+  UI["Browser UI<br/>static/index.html<br/>EN / বাংলা · 6-language help"] -->|REST / JSON| API
+  SW["Swagger UI<br/>/swagger-ui.html"] --> API
+  subgraph App["Spring Boot app :8081"]
+    API["BatchLotController<br/>/api/batch/*"] --> ENG
+    REC["BatchPersistenceController<br/>/api/batch/records/*"] --> SVC["BatchPersistenceService"]
+    SVC --> ENG["BatchLotCalculator<br/>(framework-free engine)"]
+    SVC --> JPA["Spring Data JPA"]
+  end
+  UI --> REC
+  JPA --> DB[("MySQL 8<br/>batch_header · material_requirement ·<br/>production_entry · lot_balance ·<br/>reconciliation_record")]
 ```
-RbcTcsWorld_PharmaBatchLotCalc/
-├── pom.xml                        Maven build (Spring Boot, JPA, Swagger, Selenium, Allure)
-├── run.sh                         Convenience script — exports DB env vars, starts the app
-├── README.md                      This file
-├── DEVELOPMENT.md                 Detailed build log, layer-by-layer, with honesty/verification notes
-├── RbcTcsWorld_Test_Cases.xlsx    ~150-case test design matrix (positive/negative/boundary/security)
-│
-├── src/main/java/com/sharp/batchcalc/
-│   ├── BatchLotCalculator.java     Core calculation engine (framework-agnostic)
-│   ├── BatchConfig, MaterialRequirement, ProductionEntry, LotBalance   Input models
-│   ├── BatchHierarchy, ProgressResult, ReconciliationLine,
-│   │   LotAllocationResult, LotTypeResult                              Result models
-│   ├── LotStatus, LotType                                              Enums
-│   ├── Main.java                    Plain console demo (no Spring)
-│   ├── BatchLotCalcApplication.java Spring Boot entry point
-│   ├── web/                         Stateless REST API (/api/batch/*)
-│   └── persistence/                 Persisted REST API (/api/batch/records/*) + JPA entities
-│
-├── src/main/resources/
-│   ├── application.properties       MySQL config (env-var driven)
-│   └── static/index.html            The entire browser UI (single file, no build step)
-│
-└── src/test/java/com/sharp/batchcalc/
-    ├── BatchLotCalculatorTest.java              27 unit tests
-    ├── web/BatchLotControllerIntegrationTest.java        24 stateless-API tests
-    ├── persistence/BatchPersistenceControllerIntegrationTest.java   ~13 persisted-API tests
-    └── e2e/                          Selenium Page Object Model + CriticalJourneysE2ETest
+
+### Sealed vs Exhaust allocation
+
+```mermaid
+flowchart LR
+  R["Requirement"] --> O["Lots sorted by priority"]
+  O --> P1["Open / partial lot 1 → EXHAUSTED"]
+  P1 --> P2["Open / partial lot 2 → EXHAUSTED"]
+  P2 --> S["New SEALED lot → OPEN_PARTIAL<br/>(only the remainder)"]
+  S -->|not enough stock| X["422 Shortfall<br/>(bilingual message)"]
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🧩 API
 
-### Prerequisites
-- JDK 17+
-- Maven
-- MySQL 8.x (only needed for the persisted `/api/batch/records/*` API and
-  the Saved Batches UI tab — everything else works without it)
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/batch/hierarchy` | Cartons → BFUs, caplets, bundles, shippers |
+| `POST /api/batch/material-requirement` | Base + overage = quantity to issue, per material |
+| `POST /api/batch/progress` | Produced, rejected, remaining, % complete |
+| `POST /api/batch/lot-type` | Startup / Running / Finished per shift entry |
+| `POST /api/batch/lot-allocation` | Sealed vs Exhaust allocation, with shortfall detection |
+| `POST /api/batch/reconciliation` | Used / rejected / return-to-store per material, against the tolerance |
+| `POST /api/batch/records` · `GET /api/batch/records` · `GET /{id}` · `DELETE /{id}` | Saved batch records |
+| `POST /{id}/production` · `DELETE /{id}/production/{entryId}` | Shift entries (append-only) |
+| `POST /{id}/lot-allocation` · `POST /{id}/reconciliation` | Save an allocation or reconciliation with the batch |
 
-### Run it
+Error responses are JSON:
 
-```bash
-# One-time: create the database
-mysql -u root -p -e "CREATE DATABASE batch_lot_calc;"
-
-# Edit run.sh with your MySQL credentials, then:
-chmod +x run.sh
-./run.sh
-```
-
-Open **http://localhost:8081/** for the UI, or
-**http://localhost:8081/swagger-ui.html** for the API docs.
-
-Full setup detail, troubleshooting (including the MySQL 8
-`allowPublicKeyRetrieval` and env-var-per-terminal-session gotchas), and the
-plain-console-demo path are in **[DEVELOPMENT.md](DEVELOPMENT.md)**.
-
-### Run the tests
-
-```bash
-mvn test                                     # unit + API tests (H2, no MySQL needed) — ~64 tests
-mvn io.qameta.allure:allure-maven:serve      # generates + opens the Allure report
-
-mvn spring-boot:run &                        # for the E2E layer, start the app first
-mvn test -Dtest=com.sharp.batchcalc.e2e.CriticalJourneysE2ETest
-```
+| Status | When |
+|---|---|
+| **400** | Validation failure or a negative quantity |
+| **404** | Unknown batch, or an entry that is not in this batch |
+| **422** | Lot shortfall |
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Backend:** Java 17, Spring Boot 3.3 (Web, Data JPA, Validation), Hibernate,
-MySQL Connector/J, springdoc-openapi.
-
-**Frontend:** Vanilla HTML/CSS/JS, no framework, no build step — served
-directly by Spring Boot's static resource handler.
-
-**Testing:** JUnit 5, Spring MockMvc, H2 (in-memory test DB), Selenium 4 +
-WebDriverManager, Allure 2 (+ AspectJ weaver).
+| Layer | Technology | Version |
+|---|---|---|
+| Language | Java | 17 |
+| Framework | Spring Boot (Web, Data JPA, Validation) | 3.3.4 |
+| Database | MySQL (Connector/J) · H2 for tests | 8 |
+| API docs | springdoc-openapi | 2.6.0 |
+| Frontend | One HTML / CSS / vanilla JS file, served by Spring Boot, no build step | — |
+| Tests | JUnit 5 · Spring MockMvc · Selenium 4 + WebDriverManager | 4.23.0 |
+| Reporting | Allure (`@Epic` = layer, `@Severity` = matrix priority) + AspectJ | 2.29.0 |
+| CI | GitHub Actions with a MySQL 8 service and headless Chrome | — |
 
 ---
 
-## Known Gaps & Honesty Notes
+## 📁 Project Structure
 
-Documented in full in [DEVELOPMENT.md](DEVELOPMENT.md), summarized here:
+```
+RbcTcsWorld_Pharmaceuticals_PMC/
+├── .github/workflows/ci.yml             ← unit + API (H2) → app on MySQL → Selenium E2E
+├── src/main/java/com/sharp/batchcalc/
+│   ├── BatchLotCalculator.java          core engine (no Spring), input checks
+│   ├── BatchConfig, MaterialRequirement, ProductionEntry, LotBalance, …   models
+│   ├── Main.java                        console demo
+│   ├── web/                             stateless REST API, DTO validation, error handler
+│   └── persistence/                     batch-record REST API, JPA entities, repositories
+├── src/main/resources/
+│   ├── application.properties           MySQL settings from DB_* environment variables
+│   └── static/index.html                the whole browser UI
+├── src/test/java/com/sharp/batchcalc/
+│   ├── BatchLotCalculatorTest.java      unit
+│   ├── web/                             stateless API tests
+│   ├── persistence/                     persisted API tests (H2)
+│   └── e2e/                             Selenium Page Objects + CriticalJourneysE2ETest
+├── RbcTcsWorld_Test_Cases.xlsx          ~150-case test design matrix
+├── run.sh                               starts the app (asks for the DB password)
+└── pom.xml
+```
 
-- **Login/Register are demo-only** (browser localStorage), not real backend
-  authentication — unlike PPES, which has working salted-SHA-256 auth shared
-  across both its apps.
-- No Excel import/export or pre-built reports yet (PPES has both).
-- A few numeric input fields (`cartonsOrdered`, `overagePct`,
-  `qtyRejected`) accept negative values with no server-side validation —
-  caught and documented by the test suite rather than silently shipped.
-- `DELETE /production/{entryId}` has no batch-ownership check (a cross-batch
-  delete is currently possible) — flagged in
-  `RbcTcsWorld_Test_Cases.xlsx` and as a regression-test TODO.
-- The Español/Français/العربية/中文 Help Center translations are accurate but
-  more concise than the English/বাংলা versions, and — like any translated
-  regulatory content — should be reviewed by a native speaker before real
-  GMP use.
+---
 
-## 📄 License
+## ⚙️ Getting Started
 
-MIT — matching the license used on [PPES](https://github.com/rbchy/PPES-Pharmaceutical-Packaging-Management).
-Add a `LICENSE` file with the standard MIT text before publishing this
-repository publicly.
+**Prerequisites:** JDK 17+ · Maven · MySQL 8 (only for saved batch records) · Chrome (for E2E)
+
+```bash
+git clone https://github.com/rbchy/RbcTcsWorld_Pharmaceuticals_PMC.git
+cd RbcTcsWorld_Pharmaceuticals_PMC
+
+export DB_USER=root
+export DB_PASSWORD='your-mysql-password'    # or let run.sh ask for it
+./run.sh                                    # creates batch_lot_calc if missing
+```
+
+Open **http://localhost:8081/** for the UI, or **http://localhost:8081/swagger-ui.html** for the API.
+
+| Run | Command |
+|---|---|
+| Unit + API tests (H2, no MySQL) | `mvn test` |
+| Allure report | `mvn io.qameta.allure:allure-maven:serve` |
+| Selenium E2E (app must be running) | `mvn test -Dtest='com.sharp.batchcalc.e2e.**' -Dsurefire.failIfNoSpecifiedTests=false` |
+| Console demo, no Spring | `mvn compile exec:java` |
+
+---
+
+## 🔄 How It Compares to PPES
+
+[PPES — Pharmaceutical Packaging Management System](https://github.com/rbchy/PPES-Pharmaceutical-Packaging-Management) is the author's broader packaging system: a Java Swing desktop app and a PHP web app on an 18-table MySQL database, with real authentication and Excel reports. This project goes deeper into one capability.
+
+| | **PPES** | **This calculator** |
+|---|---|---|
+| Scope | Whole packaging-line ERP | Batch / lot math, lot allocation, reconciliation |
+| Architecture | Swing + PHP apps, both talking to MySQL directly | One Spring Boot app; the UI calls a documented REST API |
+| Lot allocation | Not modelled | Sealed vs Exhaust, with shortfall detection |
+| Shift classification | Shift log only | Startup / Running / Finished per entry |
+| Authentication | Real (salted SHA-256) | Demo only (browser storage) |
+| Reports | 6 Excel reports | JSON API + on-screen tables + Allure test report |
+| Automated tests | None | 81 in CI: unit, API, Selenium |
+
+---
+
+## 🧹 Maintenance Log
+
+| Change | Why |
+|---|---|
+| Negative quantities are refused, both in the request DTOs and in the engine (400) | A −5 % overage issued **less** material than needed. A −10 reject **increased** the return-to-store figure. Negative cartons gave −2 shippers. The tests documented this as accepted behaviour |
+| `DELETE /records/{id}/production/{entryId}` checks that the entry belongs to the batch (404 otherwise) | Any batch's URL could delete another batch's production record |
+| Fail-fast constructor in `BatchLotCalculator` | A missing config only failed later with a bare `NullPointerException` |
+| 6 new API tests for those fixes; the 4 "documents current behaviour" tests now assert the fix | Each gap is now guarded by a test |
+| E2E page object reads tile titles with `textContent` | The UI starts in Bangla, so the English titles are hidden and `getText()` returned "". **5 of 12 E2E tests failed** the first time they ran in CI |
+| `run.sh` no longer contains a database password | It held a hard-coded MySQL root password; it now reads `DB_PASSWORD` or asks |
+| GitHub Actions: unit + API with Allure, then E2E against MySQL | There was no CI; the E2E tests had never run automatically |
+| README updated | The old one linked a `DEVELOPMENT.md` that is not in the repo, asked for a LICENSE that already exists, and listed the gaps fixed above |
+
+### Remaining known gaps
+
+- Login and Register are **demo only** (browser storage), not backend authentication.
+- Production entries are **append-only**. Re-sending the same entries creates duplicates; a test documents this on purpose.
+- A material with no usage entry is reconciled at its theoretical quantity (0 % variance) instead of being flagged as missing.
+- The Español / Français / العربية / 中文 Help Center texts should be reviewed by native speakers before real GMP use.
+
+---
+
+## 📈 Roadmap
+
+- [x] Input hardening, batch-scoped deletes, CI with unit / API / E2E
+- [ ] Spring Security with real users and roles (port from PPES)
+- [ ] Flag missing usage data in reconciliation instead of assuming theoretical
+- [ ] Idempotent production entries (shift + date key)
+- [ ] Flyway migrations instead of `ddl-auto=update`
+- [ ] Excel export of a batch record (Apache POI)
+- [ ] Publish the Allure report to GitHub Pages
+
+---
+
+## 🔗 Related Projects
+
+| Project | Stack |
+|---|---|
+| 💊 [PharmaPack QMS — Serialization & Line Control](https://github.com/rbchy/RbcTcsWorld_PharmaPackQMS_Serialization) | Spring Boot · React · L3 serialization · 77 / 77 in CI |
+| 💊 [PharmaPack QMS](https://github.com/rbchy/RbcTcsWorld_PharmaPackQMS) | Spring Boot QMS: AQL, deviations, CAPA, reconciliation · 66 / 66 in CI |
+| 🧬 [RbcTcsWorld ClinTrial Connect](https://github.com/rbchy/RbcTcsWorld_ClinTrial-Connect) | Clinical-trial platform with its own test suite |
+| ⭐ [RbcTcsWorld E-Commerce Suite](https://github.com/rbchy/RbcTcsWorld_ECommerceSuite) | Spring Boot · REST Assured · Selenium · Playwright · CI quality gates |
+
+<sub>All projects: [github.com/rbchy](https://github.com/rbchy)</sub>
+
+---
+
+## ⚠️ Disclaimer
+
+This is a **portfolio / training project** built from hands-on GMP packaging experience. It is **not** a validated GxP system. Quantities and tolerances must follow your site's SOPs and approved batch records.
+
+---
+
+## 👤 Author
+
+<div align="center">
+
+**Ranajit Baran Chowdhury (RB Chowdhury)**
+QA Automation Engineer / SDET · Pharmaceutical Packaging Production (GMP) · West Norriton, Pennsylvania, USA
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rbchy/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/rbchy)
+[![Website](https://img.shields.io/badge/Website-rbchy.github.io%2Frbchy-0d9488?style=for-the-badge&logo=githubpages&logoColor=white)](https://rbchy.github.io/rbchy/)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Website-blueviolet?style=for-the-badge&logo=wix&logoColor=white)](https://rbc6543.wixsite.com/rbc-portfolio)
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:chyranajit@gmail.com)
+
+<sub>MIT licensed — see [LICENSE](LICENSE).</sub>
+
+⭐ *If this project helps you, a star on the repo is appreciated.*
+
+</div>
